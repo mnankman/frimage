@@ -1,13 +1,11 @@
 src/base/__pycache__/*.pyc
 src/__pycache__/*.pyc
 src/gui/__pycache__/*.pyc
+src/gui/__pycache__/*.*.pyc
 src/img/__pycache__/*.pyc
-src/lib/__pycache__/__init__.*.pyc
-src/lib/__pycache__/log.*.pyc
-src/lib/__pycache__/modelobject.*.pyc
-src/lib/__pycache__/persistentobject.*.pyc
-src/lib/__pycache__/pubsub.*.pyc
-src/lib/__pycache__/util.*.pyc
+src/img/__pycache__/*.*.pyc
+src/lib/__pycache__/*.pyc
+src/lib/__pycache__/*.*.pyc
 src/resource/*.jpg
 savedprojects/*
 
