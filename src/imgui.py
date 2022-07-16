@@ -17,8 +17,9 @@ RESOURCES="resource"
 
 ID_FILE_NEW_PROJECT=101
 ID_FILE_SAVE_PROJECT=102
-ID_FILE_OPEN_PROJECT=103
-ID_FILE_SAVE_GENERATED_IMAGE=104
+ID_FILE_SAVE_PROJECT_AS=103
+ID_FILE_OPEN_PROJECT=104
+ID_FILE_SAVE_GENERATED_IMAGE=105
 ID_FILE_EXIT=199
 
 ID_FILE_NEW_PROJECT_JULIAPROJECT=121
@@ -274,6 +275,7 @@ class MainWindow(wx.Frame):
         newProjectMenu.Append(ID_FILE_NEW_PROJECT_JULIAPROJECT, "new &Julia Project", "Create new Julia Project")
         fileMenu.AppendSubMenu(newProjectMenu, "&New")
         fileMenu.Append(ID_FILE_SAVE_PROJECT, "&Save project", "Save current project")
+        fileMenu.Append(ID_FILE_SAVE_PROJECT_AS, "&Save project as...", "Save current project under a new name")
         fileMenu.Append(ID_FILE_OPEN_PROJECT, "&Open project", "Open project")
         fileMenu.Append(ID_FILE_SAVE_GENERATED_IMAGE, "Save &generated image", "Save generated image")
         fileMenu.Append(ID_FILE_EXIT, "E&xit", "Exit")
@@ -290,6 +292,7 @@ class MainWindow(wx.Frame):
         self.Bind(event=wx.EVT_MENU, handler=self.onUserNewMandelbrotProject, id=ID_FILE_NEW_PROJECT_MANDELBROTPROJECT)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserNewJuliaProject, id=ID_FILE_NEW_PROJECT_JULIAPROJECT)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserSaveProject, id=ID_FILE_SAVE_PROJECT)
+        self.Bind(event=wx.EVT_MENU, handler=self.onUserSaveProjectAs, id=ID_FILE_SAVE_PROJECT_AS)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserOpenProject, id=ID_FILE_OPEN_PROJECT)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserExit, id=ID_FILE_EXIT)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserShowInspectionTool, id=ID_DEBUG_SHOWINSPECTIONTOOL)
@@ -314,8 +317,15 @@ class MainWindow(wx.Frame):
         e.Skip()
 
     def onUserSaveProject(self, e):
+        if self.model.getCurrentProject().getPath()!=None:
+            self.controller.saveProject()
+        else: 
+            self.onUserSaveProjectAs(e)
+        e.Skip()
+
+    def onUserSaveProjectAs(self, e):
         path = dlg.saveProjectDialog(self)
-        self.controller.saveProject(path)
+        self.controller.saveProjectAs(path)
         e.Skip()
 
     def onUserSaveGeneratedImage(self, e):
