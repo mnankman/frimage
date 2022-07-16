@@ -13,6 +13,9 @@ class DynamicCtrl:
         self.attributeName = attributeName
         self.modelObject.subscribe(self, "msg_object_modified", self.onModelObjectChange)
 
+    def __del__(self):
+        self.modelObject.unsubscribe(self, self.onModelObjectChange)
+
     def onUserValueChange(self, e):
         ctrl = e.GetEventObject()
         val = ctrl.GetValue()
