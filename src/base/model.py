@@ -4,6 +4,7 @@ from lib.pubsub import Publisher
 from lib.modelobject import ModelObject
 import img.imgengine
 from img.imgbox import ImageBox
+from PIL import Image
 
 class ProjectSource(ModelObject):
     def __init__(self, project, path=None):
@@ -15,6 +16,7 @@ class ProjectSource(ModelObject):
         self.__gradientImage = None
         self.__heatmapBaseImageWidth = 10
         self.__heatmapBaseImageHeight = 10
+        self.__reverseGradient = False
         self.persist("path", None)
         self.persist("heatmapBaseImageWidth", 10)
         self.persist("heatmapBaseImageHeight", 10)
@@ -42,6 +44,10 @@ class ProjectSource(ModelObject):
         self.__heatmapBaseImage = im
         self.setModified()
 
+    def setReverseGradient(self, v):
+        self.__reverseGradient = v
+        self.setModified()
+
     def setGradientImage(self, im):
         self.__gradientImage = im
         self.setModified()
@@ -64,9 +70,6 @@ class ProjectSource(ModelObject):
     def getHeatmapBaseImageHeight(self):
         return self.__heatmapBaseImageHeight
 
-    def getGradientImage(self):
-        return self.__gradientImage
-    
     def setHeatmapBaseImageHeight(self, h):
         log.debug(function=self.setHeatmapBaseImageHeight, args=h)
         self.__heatmapBaseImageHeight = int(h)
@@ -89,6 +92,13 @@ class ProjectSource(ModelObject):
     def getHeatmapBaseImage(self):
         return self.__heatmapBaseImage
 
+    def getGradientImage(self):
+        im = self.__gradientImage
+        if im!=None:
+            if self.__reverseGradient:
+                return im.transpose(method=Image.FLIP_LEFT_RIGHT)
+        return im
+    
     def toString(self):
         s =  self.getId() + ": " + self.__path
         return s
@@ -214,8 +224,10 @@ class Project(ModelObject):
         self.setModified()
         
     def setReverseColors(self, reverse):
-        self.__reverseColors = reverse
-        self.setModified()
+        if self.__reverseColors != reverse:
+            self.__reverseColors = reverse
+            self.projectSource.setReverseGradient(reverse)
+            self.setModified()
 
     def setWidth(self, w):
         self.__width = w
