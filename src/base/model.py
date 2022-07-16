@@ -197,6 +197,7 @@ class Project(ModelObject):
         self.__borderColourPick = 255
         self.projectSource = ProjectSource(self)
         self.generatedImage = None
+        self.path = None
         self.progress = 0
         self.persist("reverseColors")
         self.persist("name")
@@ -234,6 +235,10 @@ class Project(ModelObject):
         self.__borderColourPick = p
         self.setModified()
 
+    def setPath(self, path):
+        self.path = path
+        self.setModified()
+        
     def getProjectSourceImage(self):
         return self.projectSource.getSource().getSourceImage()
 
@@ -260,6 +265,9 @@ class Project(ModelObject):
 
     def getBorderColourPick(self):
         return self.__borderColourPick
+
+    def getPath(self):
+        return self.path
 
     def generate(self):
         pass

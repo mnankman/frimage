@@ -46,9 +46,13 @@ class Controller:
     def getCurrentProject(self):
         return self.model.getCurrentProject()
 
-    def saveProject(self, path):
+    def saveProject(self):
+        self.saveProjectAs(self.getCurrentProject().getPath())
+
+    def saveProjectAs(self, path):
         log.debug(function=self.saveProject, args=path)
         p = self.getCurrentProject()
+        p.setPath(path)
         log.debug(p.__dict__)
         saved = json.dumps(p.serialize(), indent=4)
         f=open(path,"w")
@@ -59,9 +63,14 @@ class Controller:
     def openProject(self, path):
         log.debug(function=self.openProject, args=path)
         f=open(path,"r")
-        saved = f.readline()
-        f.close()
-        if saved:
-            data = json.loads(saved)
+        try:
+            data = json.load(f)
             self.model.openProject(data)
+            self.model.getCurrentProject().setPath(path)
+        except TypeError:
+            log.error(_("Unable to load project file"), function=self.openProject)
+        finally:            
+            pass
+        f.close()
+
 
