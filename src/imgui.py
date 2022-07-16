@@ -12,7 +12,7 @@ import gui.dynctrl as dynctrl
 import gui.zoompanel as zoompanel
 import gui.dialogs as dlg
 import gui.i18n
-
+        
 RESOURCES="resource"
 
 ID_FILE_NEW_PROJECT=101
@@ -28,6 +28,8 @@ ID_FILE_NEW_PROJECT_MANDELBROTPROJECT=122
 ID_PROJECT_SELECT_SOURCEIMAGE=301
 ID_PROJECT_GENERATE=302
 ID_PROJECT_RESET=303
+ID_PROJECT_SELECT_ZOOM_MODE=304
+ID_PROJECT_SELECT_FINISH_MODE=305
 
 ID_DEBUG_SHOWINSPECTIONTOOL=601
 
@@ -37,9 +39,9 @@ WINDOW_STYLES = {
 }
 
 
-class ProjectConfigPanel(wx.Panel):
+class ProjectPropertiesPanel(wx.Panel):
     def __init__(self, parent, styles, controller, **kw):
-        super(ProjectConfigPanel, self).__init__(parent, **kw)    
+        super(ProjectPropertiesPanel, self).__init__(parent, **kw)    
         self.styles = styles
         self.SetBackgroundColour(styles["BackgroundColour"])
         self.SetForegroundColour(styles["ForegroundColour"])
@@ -246,7 +248,7 @@ class MainWindow(wx.Frame):
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
  
-        self.configPnl = ProjectConfigPanel(self, styles, self.controller, size=(300,800))
+        self.configPnl = ProjectPropertiesPanel(self, styles, self.controller, size=(300,800))
         self.ResultPnl = ResultPanel(self, styles, self.controller, style=wx.SUNKEN_BORDER, size=(1600,1600))
         self.ResultPnl.Bind(zoompanel.EVT_ZOOM_AREA, self.configPnl.onGenerate)
 
@@ -254,6 +256,7 @@ class MainWindow(wx.Frame):
         self.sizer.Add(self.ResultPnl, 5)
         self.SetAutoLayout(True)
 
+        self.createToolbar()
         self.createMenu()
         self.SetSizer(self.sizer)
         self.SetMinSize((800,400))
@@ -261,8 +264,46 @@ class MainWindow(wx.Frame):
         self.Show()
 
         self.Bind(event=wx.EVT_CLOSE, handler=self.onUserCloseMainWindow)
+        self.Bind(event=wx.EVT_MENU, handler=self.onUserNewMandelbrotProject, id=ID_FILE_NEW_PROJECT_MANDELBROTPROJECT)
+        self.Bind(event=wx.EVT_MENU, handler=self.onUserNewJuliaProject, id=ID_FILE_NEW_PROJECT_JULIAPROJECT)
+        self.Bind(event=wx.EVT_MENU, handler=self.onUserSaveProject, id=ID_FILE_SAVE_PROJECT)
+        self.Bind(event=wx.EVT_MENU, handler=self.onUserSaveProjectAs, id=ID_FILE_SAVE_PROJECT_AS)
+        self.Bind(event=wx.EVT_MENU, handler=self.onUserOpenProject, id=ID_FILE_OPEN_PROJECT)
+        self.Bind(event=wx.EVT_MENU, handler=self.onUserExit, id=ID_FILE_EXIT)
+        self.Bind(event=wx.EVT_MENU, handler=self.onUserShowInspectionTool, id=ID_DEBUG_SHOWINSPECTIONTOOL)
+        self.Bind(event=wx.EVT_MENU, handler=self.onUserGenerate, id=ID_PROJECT_GENERATE)
+        self.Bind(event=wx.EVT_MENU, handler=self.onUserReset, id=ID_PROJECT_RESET)
+        self.Bind(event=wx.EVT_MENU, handler=self.onUserSelectSourceImage, id=ID_PROJECT_SELECT_SOURCEIMAGE)
+        self.Bind(event=wx.EVT_MENU, handler=self.onUserSaveGeneratedImage, id=ID_FILE_SAVE_GENERATED_IMAGE)
 
         wx.PostEvent(self, wx.MenuEvent(wx.wxEVT_MENU, ID_FILE_NEW_PROJECT_MANDELBROTPROJECT))
+
+    def createToolbar(self):
+        toolbar = self.CreateToolBar()
+
+        bmpOpen = wx.Image(RESOURCES+"/open.png").ConvertToBitmap()
+        bmpSave = wx.Image(RESOURCES+"/save.png").ConvertToBitmap()
+        bmpSaveAs = wx.Image(RESOURCES+"/save_as.png").ConvertToBitmap()
+        bmpSelectImage = wx.Image(RESOURCES+"/add_photo.png").ConvertToBitmap()
+        bmpGenerate = wx.Image(RESOURCES+"/play.png").ConvertToBitmap()
+        bmpReset = wx.Image(RESOURCES+"/refresh.png").ConvertToBitmap()
+        bmpSelectZoomMode = wx.Image(RESOURCES+"/picture_in_picture.png").ConvertToBitmap()
+        bmpSelectFinishMode = wx.Image(RESOURCES+"/image.png").ConvertToBitmap()
+
+        toolbar.AddTool(ID_FILE_OPEN_PROJECT, "Open project", bmpOpen, wx.NullBitmap, wx.ITEM_NORMAL, "Open project", "Open project", None)
+        toolbar.AddTool(ID_FILE_SAVE_PROJECT, "Save project", bmpSave, wx.NullBitmap, wx.ITEM_NORMAL, "Save project", "Save project", None)
+        toolbar.AddTool(ID_FILE_SAVE_PROJECT_AS, "Save project as...", bmpSaveAs, wx.NullBitmap, wx.ITEM_NORMAL, "Save project as...", "Save project project under a new name", None)
+        toolbar.AddSeparator()
+        toolbar.AddTool(ID_PROJECT_SELECT_SOURCEIMAGE, "Select image...", bmpSelectImage, wx.NullBitmap, wx.ITEM_NORMAL, "Select image", "Select image", None)
+        toolbar.AddTool(ID_PROJECT_GENERATE, "Generate", bmpGenerate, wx.NullBitmap, wx.ITEM_NORMAL, "Generate", "Generate", None)
+        toolbar.AddTool(ID_PROJECT_RESET, "Reset", bmpReset, wx.NullBitmap, wx.ITEM_NORMAL, "Reset", "Reset", None)
+        toolbar.AddSeparator()
+        toolbar.AddTool(ID_PROJECT_SELECT_ZOOM_MODE, "Zoom mode", bmpSelectZoomMode, wx.NullBitmap, wx.ITEM_NORMAL, "Switch to zoom mode", "Switch to zoom mode", None)
+        toolbar.AddTool(ID_PROJECT_SELECT_FINISH_MODE, "Zoom mode", bmpSelectFinishMode, wx.NullBitmap, wx.ITEM_NORMAL, "Switch to finish mode", "Switch to finish mode", None)
+
+        toolbar.Realize()
+
+        self.SetToolBar(toolbar)
 
     def createMenu(self):
         menuBar = wx.MenuBar()
@@ -288,18 +329,6 @@ class MainWindow(wx.Frame):
         menuBar.Append(projectMenu, "&Project")
         menuBar.Append(debugMenu, "&Debug")
         self.SetMenuBar(menuBar)
-
-        self.Bind(event=wx.EVT_MENU, handler=self.onUserNewMandelbrotProject, id=ID_FILE_NEW_PROJECT_MANDELBROTPROJECT)
-        self.Bind(event=wx.EVT_MENU, handler=self.onUserNewJuliaProject, id=ID_FILE_NEW_PROJECT_JULIAPROJECT)
-        self.Bind(event=wx.EVT_MENU, handler=self.onUserSaveProject, id=ID_FILE_SAVE_PROJECT)
-        self.Bind(event=wx.EVT_MENU, handler=self.onUserSaveProjectAs, id=ID_FILE_SAVE_PROJECT_AS)
-        self.Bind(event=wx.EVT_MENU, handler=self.onUserOpenProject, id=ID_FILE_OPEN_PROJECT)
-        self.Bind(event=wx.EVT_MENU, handler=self.onUserExit, id=ID_FILE_EXIT)
-        self.Bind(event=wx.EVT_MENU, handler=self.onUserShowInspectionTool, id=ID_DEBUG_SHOWINSPECTIONTOOL)
-        self.Bind(event=wx.EVT_MENU, handler=self.onUserGenerate, id=ID_PROJECT_GENERATE)
-        self.Bind(event=wx.EVT_MENU, handler=self.onUserReset, id=ID_PROJECT_RESET)
-        self.Bind(event=wx.EVT_MENU, handler=self.onUserSelectSourceImage, id=ID_PROJECT_SELECT_SOURCEIMAGE)
-        self.Bind(event=wx.EVT_MENU, handler=self.onUserSaveGeneratedImage, id=ID_FILE_SAVE_GENERATED_IMAGE)
 
     def onUserCloseMainWindow(self, e):
         exit()
@@ -334,7 +363,7 @@ class MainWindow(wx.Frame):
         e.Skip()
 
     def onUserGenerate(self, e):
-        self.controller.generate()
+        self.configPnl.onGenerate(e)
         e.Skip()
 
     def onUserReset(self, e):
