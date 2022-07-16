@@ -8,10 +8,15 @@ ZoomAreaEvent, EVT_ZOOM_AREA = wx.lib.newevent.NewEvent()
 
 ZOOM_SCALE_VALUES = [0.05, 0.1, 0.2, 0.25, 0.5, 0.8]
 
+MODE_ZOOM = 0
+MODE_FINISH = 1
+VALID_MODES = [MODE_ZOOM, MODE_FINISH]
+
 class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
     def __init__(self, parent, modelObject, attributeName, styles, **kw):
         dynctrl.DynamicCtrl.__init__(self, modelObject, attributeName)
         wx.Panel.__init__(self, parent, **kw)
+        self.mode = MODE_ZOOM
         self.areaRect = self.modelObject.getArea().getRect()
         self.zoomRectScale = 2
         self.zoomRect = None
@@ -41,6 +46,10 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
 
     def pilImageToBitmap(self, pilImg):
         return self.pilImageToWxImage(pilImg).ConvertToBitmap()
+
+    def setMode(self, m=MODE_ZOOM):
+        if m in VALID_MODES:
+            self.mode = m
 
     def setImage(self, pilImg):
         if pilImg!=None:
@@ -75,9 +84,9 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         self.SetSize(pw-2, ph-2)
         self.Refresh(rect=(0,0,pw,ph))
 
-    def calcImageFitSize(self, pilImg):
+    def calcImageFitSize(self, pilImg, targetSize):
         # calculates largest fit while maintaining aspect ratio of the image
-        tw,th = self.GetSize()          # target size (size of the panel)
+        tw,th = targetSize          
         cw,ch = pilImg.size
         l = cw if cw>ch else ch         # longest edge
         f = tw/l if tw<th else th/l     # resize factor
@@ -113,14 +122,17 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         event.Skip()
         #im = self.drawSelectedRectInImage(self.pilImage)
         im = self.pilImage
-        self.imageFitSize = self.calcImageFitSize(im)
+        self.imageFitSize = self.calcImageFitSize(im, self.GetSize())
         dc = wx.PaintDC(self)
         imr = im.resize(self.imageFitSize)
         dc.DrawBitmap(self.pilImageToBitmap(imr), 0, 0)
         self.drawImageSize(dc)
         if self.__mouseOver__:
             self.zoomRect = self.getZoomRect(imr.size)
-            self.drawZoomRect(dc)
+            if self.mode == MODE_ZOOM:
+                self.drawZoomRect(dc)
+            elif self.mode == MODE_FINISH:
+                self.drawSourceImage(dc)
 
     def drawImageSize(self, dc):
         dc.SetPen(wx.Pen("#ffffff"))
@@ -146,10 +158,17 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         w,h = self.GetSize()
         dc.DrawText(txt2, 0, h-th)
 
+    def drawSourceImage(self, dc):
+        rx,ry,rw,rh = self.zoomRect
+        dc.DrawRectangle(rx, ry, rw, rh)
+        im = self.modelObject.getProjectSource().getSourceImage()
+        imr = im.resize(self.calcImageFitSize(im, (rw,rh)))
+        dc.DrawBitmap(self.pilImageToBitmap(imr), rx, ry)
+
     def drawSelectedRectInImage(self, pilImg):
         im = pilImg.copy()
         iw,ih = im.size
-        nw,nh = self.calcImageFitSize(im)
+        nw,nh = self.calcImageFitSize(im, self.GetSize())
         if self.selectedRect!=None:
             draw = ImageDraw.Draw(im)
             x,y,w,h = self.selectedRect
@@ -206,12 +225,19 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         event.Skip()
 
     def OnMouseLeftDown(self, e):
-        self.modelObject.getArea().setRect(self.calcSelectedAreaRect())
-        self.selectedRect = self.getZoomRect(self.pilImage)
+        if self.mode == MODE_ZOOM:
+            self.modelObject.getArea().setRect(self.calcSelectedAreaRect())
+            self.selectedRect = self.getZoomRect(self.pilImage.size)
+        elif self.mode == MODE_FINISH:
+            pass
         e.Skip()
 
     def OnMouseRightDown(self, e):
-        wx.PostEvent(self, ZoomAreaEvent(obj=self))
+        if self.mode == MODE_ZOOM:
+            self.modelObject.getArea().setRect(self.calcSelectedAreaRect())
+            self.selectedRect = self.getZoomRect(self.pilImage.size)
+            wx.PostEvent(self, ZoomAreaEvent(obj=self))
+        e.Skip()
 
     def OnMouseWheel(self, e):
         self.spinZoomScale(e.GetWheelRotation())

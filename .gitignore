@@ -10,3 +10,4 @@ src/lib/__pycache__/pubsub.*.pyc
 src/lib/__pycache__/util.*.pyc
 src/resource/*.jpg
 savedprojects/*
+photolibrary/*

@@ -202,9 +202,9 @@ class ResultPanel(wx.Panel):
         self.project = project
 
         sizer.Clear()
-        imZmPnl = zoompanel.ZoomPanel(self, self.project, "generatedImage", self.styles, size=self.GetSize())
-        imZmPnl.Bind(zoompanel.EVT_ZOOM_AREA, self.onAreaZoom)
-        sizer.Add(imZmPnl, 1)
+        self.imZmPnl = zoompanel.ZoomPanel(self, self.project, "generatedImage", self.styles, size=self.GetSize())
+        self.imZmPnl.Bind(zoompanel.EVT_ZOOM_AREA, self.onAreaZoom)
+        sizer.Add(self.imZmPnl, 1)
         sizer.Layout()
 
     def onResize(self, e):
@@ -232,6 +232,11 @@ class ResultPanel(wx.Panel):
     def onMsgGenerateComplete(self, payload):
         pass
 
+    def setZoomMode(self):
+        self.imZmPnl.setMode(zoompanel.MODE_ZOOM)
+
+    def setFinishMode(self):
+        self.imZmPnl.setMode(zoompanel.MODE_FINISH)
 
 class MainWindow(wx.Frame):
     def __init__(self, styles, controller):
@@ -275,6 +280,8 @@ class MainWindow(wx.Frame):
         self.Bind(event=wx.EVT_MENU, handler=self.onUserReset, id=ID_PROJECT_RESET)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserSelectSourceImage, id=ID_PROJECT_SELECT_SOURCEIMAGE)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserSaveGeneratedImage, id=ID_FILE_SAVE_GENERATED_IMAGE)
+        self.Bind(event=wx.EVT_MENU, handler=self.onUserSelectZoomMode, id=ID_PROJECT_SELECT_ZOOM_MODE)
+        self.Bind(event=wx.EVT_MENU, handler=self.onUserSelectFinishMode, id=ID_PROJECT_SELECT_FINISH_MODE)
 
         wx.PostEvent(self, wx.MenuEvent(wx.wxEVT_MENU, ID_FILE_NEW_PROJECT_MANDELBROTPROJECT))
 
@@ -381,6 +388,14 @@ class MainWindow(wx.Frame):
     def onUserOpenProject(self, e):
         path = dlg.openProjectDialog(self)
         self.controller.openProject(path)
+        e.Skip()
+
+    def onUserSelectZoomMode(self, e):
+        self.ResultPnl.setZoomMode()
+        e.Skip()
+
+    def onUserSelectFinishMode(self, e):
+        self.ResultPnl.setFinishMode()
         e.Skip()
 
     def onUserShowInspectionTool(self, e):
