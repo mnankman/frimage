@@ -1,15 +1,17 @@
 import asyncio
-from pyexpat import model
 import wx
 from wxasync import WxAsyncApp, StartCoroutine
 from wx.lib.inspection import InspectionTool
-import wx.lib.scrolledpanel as scrolled
 import wx.lib.progressindicator as progress
+
 from lib import log
+
 from base.model import JuliaProject, Model
 from base.controller import Controller
 import gui.dynctrl as dynctrl 
-
+import gui.zoompanel as zoompanel
+import gui.dialogs as dlg
+import gui.i18n
 
 RESOURCES="resource"
 
@@ -126,8 +128,8 @@ class ProjectConfigPanel(wx.Panel):
         gridsizer4.Add(chkBox1, 1)
 
         pw,ph = self.GetSize()
-        self.btnGenerate = wx.Button(self, label="Generate", size=(pw, 18))
-        btnReset = wx.Button(self, label="Reset", size=(pw, 18))
+        self.btnGenerate = wx.Button(self, label=_("Generate"), size=(pw, 18))
+        btnReset = wx.Button(self, label=_("Reset"), size=(pw, 18))
         self.progressBar = progress.ProgressIndicator(self, size=(pw,5))
         gridsizer4.Add(btnReset, 1)
         gridsizer4.Add(self.btnGenerate, 1)
@@ -154,11 +156,11 @@ class ProjectConfigPanel(wx.Panel):
         self.progressBar.SetValue(p)
         if p>=100: 
             self.btnGenerate.Enable()
-            self.btnGenerate.SetLabel("Generate")
+            self.btnGenerate.SetLabel(_("Generate"))
 
     def onGenerate(self, e):
         self.progressBar.Start()
-        self.btnGenerate.SetLabel("working...")
+        self.btnGenerate.SetLabel(_("working") + "...")
         self.btnGenerate.Disable()
         StartCoroutine(self.generate, self)
         e.Skip()
@@ -186,7 +188,6 @@ class ResultPanel(wx.Panel):
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
         self.SetAutoLayout(True)
-        #self.SetupScrolling()
         self.Bind(wx.EVT_SIZE, self.onResize)
 
     def cleanUp(self):
@@ -198,8 +199,8 @@ class ResultPanel(wx.Panel):
         self.project = project
 
         sizer.Clear()
-        imZmPnl = dynctrl.ImageZoomPanel(self, self.project, "generatedImage", self.styles, size=self.GetSize())
-        imZmPnl.Bind(dynctrl.EVT_ZOOM_AREA, self.onAreaZoom)
+        imZmPnl = zoompanel.ZoomPanel(self, self.project, "generatedImage", self.styles, size=self.GetSize())
+        imZmPnl.Bind(zoompanel.EVT_ZOOM_AREA, self.onAreaZoom)
         sizer.Add(imZmPnl, 1)
         sizer.Layout()
 
@@ -246,7 +247,7 @@ class MainWindow(wx.Frame):
  
         self.configPnl = ProjectConfigPanel(self, styles, self.controller, size=(300,800))
         self.ResultPnl = ResultPanel(self, styles, self.controller, style=wx.SUNKEN_BORDER, size=(1600,1600))
-        self.ResultPnl.Bind(dynctrl.EVT_ZOOM_AREA, self.configPnl.onGenerate)
+        self.ResultPnl.Bind(zoompanel.EVT_ZOOM_AREA, self.configPnl.onGenerate)
 
         self.sizer.Add(self.configPnl, 1)
         self.sizer.Add(self.ResultPnl, 5)
@@ -313,26 +314,12 @@ class MainWindow(wx.Frame):
         e.Skip()
 
     def onUserSaveProject(self, e):
-        # Create open file dialog
-        dlg = wx.FileDialog(self, "Save", "", "", 
-            "Image Generation Project files (*.igp)|*.igp", 
-            wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
-        if dlg.ShowModal() == wx.ID_CANCEL:
-            return
-        path = dlg.GetPath()
-        dlg.Destroy()
+        path = dlg.saveProjectDialog(self)
         self.controller.saveProject(path)
         e.Skip()
 
     def onUserSaveGeneratedImage(self, e):
-        # Create open file dialog
-        dlg = wx.FileDialog(self, "Save", "", "", 
-            "PNG Images (*.png)|*.png", 
-            wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
-        if dlg.ShowModal() == wx.ID_CANCEL:
-            return
-        path = dlg.GetPath()
-        dlg.Destroy()
+        path = dlg.saveImageDialog(self)
         self.controller.saveGeneratedImage(path)
         e.Skip()
 
@@ -348,27 +335,13 @@ class MainWindow(wx.Frame):
         self.controller.selectProjectSourceImage(path)
     
     def onUserSelectSourceImage(self, e):
-        # Create open file dialog
-        dlg = wx.FileDialog(self, "Open", "", "", 
-            "JPEG Images (*.jpg)|*.jpg", 
-            wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
-        if dlg.ShowModal() == wx.ID_CANCEL:
-            return
-        path = dlg.GetPath()
+        path = dlg.openImageDialog(self)
         self.selectProjectSourceImage(path)
-        dlg.Destroy()
         e.Skip()
 
     def onUserOpenProject(self, e):
-        # Create open file dialog
-        dlg = wx.FileDialog(self, "Open", "", "", 
-            "Image Generation Project files (*.igp)|*.igp", 
-            wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
-        if dlg.ShowModal() == wx.ID_CANCEL:
-            return
-        path = dlg.GetPath()
+        path = dlg.openProjectDialog(self)
         self.controller.openProject(path)
-        dlg.Destroy()
         e.Skip()
 
     def onUserShowInspectionTool(self, e):
@@ -378,7 +351,10 @@ class MainWindow(wx.Frame):
 import logging
 
 def start():
+    # configure logging
     logging.basicConfig(format='[%(name)s] %(levelname)s:%(message)s', level=logging.DEBUG)
+       
+    # construct the asynchronous app and run it in the main async event loop
     app = WxAsyncApp()
     loop = asyncio.get_event_loop()
     controller = Controller(Model())
