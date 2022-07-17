@@ -1,12 +1,14 @@
 import json
 from lib import log
-from .model import Model, AbstractModel
+from base.model import Model, AbstractModel
+import base.filemgmt as filemgmt
 
 class Controller:
     def __init__(self, model):
         assert model
         assert isinstance(model, AbstractModel)
         self.model = model
+        self.ps = filemgmt.ProjectStorage()
 
     def reset(self):
         self.model.init()
@@ -14,11 +16,14 @@ class Controller:
     def getModel(self):
         return self.model
 
-    def newMandelbrotProject(self, name=None):
+    def newMandelbrotProject(self, name):
+        name = self.ps.getNextName(name)
         self.model.newProject(Model.PROJECT_TYPE_MANDELBROT, name)
         self.resetProject()
 
-    def newJuliaProject(self, name=None):
+    def newJuliaProject(self, name):
+        ps = filemgmt.ProjectStorage()
+        name = self.ps.getNextName(name)
         self.model.newProject(Model.PROJECT_TYPE_JULIA, name)
         self.resetProject()
         
@@ -47,30 +52,14 @@ class Controller:
         return self.model.getCurrentProject()
 
     def saveProject(self):
-        self.saveProjectAs(self.getCurrentProject().getPath())
-
-    def saveProjectAs(self, path):
-        log.debug(function=self.saveProject, args=path)
-        p = self.getCurrentProject()
-        p.setPath(path)
-        log.debug(p.__dict__)
-        saved = json.dumps(p.serialize(), indent=4)
-        f=open(path,"w")
-        f.write(saved)
-        f.close()
-        log.trace("project saved to:", path)
-
-    def openProject(self, path):
-        log.debug(function=self.openProject, args=path)
-        f=open(path,"r")
-        try:
-            data = json.load(f)
-            self.model.openProject(data)
-            self.model.getCurrentProject().setPath(path)
-        except TypeError:
-            log.error(_("Unable to load project file"), function=self.openProject)
-        finally:            
-            pass
-        f.close()
-
+        log.debug(function=self.saveProject)
+        self.ps.setName(self.getCurrentProject().getName())
+        self.ps.create()
+        self.model.save(self.ps)
+        
+    def openProject(self):
+        self.ps.setName(self.getCurrentProject().getName())
+        self.ps.create()
+        self.model.load(self.ps)
+        
 

@@ -6,6 +6,7 @@ from lib.modelobject import ModelObject
 import img.imgengine
 from img.imgbox import ImageBox
 from PIL import Image
+import json
 
 class ProjectSource(ModelObject):
     def __init__(self, project, path=None):
@@ -103,6 +104,13 @@ class ProjectSource(ModelObject):
             if self.__flipGradient:
                 return im.transpose(method=Image.FLIP_LEFT_RIGHT)
         return im
+
+    def saveSourceImage(self, storage):
+        im = self.getSourceImage()
+        if im != None:
+            imgPath = storage.toPath("source.png")
+            im.save(imgPath)
+            self.__path = imgPath
     
     def toString(self):
         s =  self.getId() + ": " + self.__path
@@ -205,6 +213,7 @@ class Project(ModelObject):
     def __init__(self):
         super().__init__()
         self.__name = None
+        self.__artist = None
         self.__width = None
         self.__height = None
         self.__borderSize = 5
@@ -214,6 +223,7 @@ class Project(ModelObject):
         self.path = None
         self.progress = 0
         self.persist("name")
+        self.persist("artist")
         self.persist("width")
         self.persist("height")
         self.persist("borderSize", 2)
@@ -224,6 +234,10 @@ class Project(ModelObject):
         
     def setName(self, name):
         self.__name = name
+        self.setModified()
+        
+    def setArtist(self, artist):
+        self.__artist = artist
         self.setModified()
         
     def setWidth(self, w):
@@ -256,6 +270,9 @@ class Project(ModelObject):
 
     def getName(self):
         return self.__name
+
+    def getArtist(self):
+        return self.__artist
 
     def getSize(self):
         return (self.__width, self.__height)
@@ -311,7 +328,13 @@ class Project(ModelObject):
 
     def getGeneratedImage(self):
         return self.generatedImage
-    
+
+    def saveImages(self, storage):
+        pass
+
+    def loadImages(self, storage):
+        pass
+
     def toString(self):
         s =  self.getId() + ": " + self.__name
         return s
@@ -321,11 +344,19 @@ class Project(ModelObject):
 
 
 class GeneratedSet(ModelObject):
-    def __init__(self, parent):
+    def __init__(self, parent, name):
         super().__init__(parent)
         self.area = Area(self)
+        self.__name = name
         self.__generatedImage = None
         self.__generatedSets = []
+        self.persist("name")
+
+    def setName(self, name):
+        self.__name = name
+
+    def getName(self):
+        return self.__name
 
     def getArea(self):
         return self.area
@@ -340,16 +371,41 @@ class GeneratedSet(ModelObject):
         self.__generatedImage = im
         self.setModified()
 
-    def addGeneratedSet(self, generatedSet):
-        self.__generatedSets.append(generatedSet)
+    def addGeneratedSet(self):
+        newSet = self.newGeneratedSet()
+        self.__generatedSets.append(newSet)
+        return newSet
+
+    def newGeneratedSet(self):
+        if isinstance(self.getParent(), GeneratedSet):
+            nm = self.getName()
+        else:
+            nm = "step"
+        newSet = GeneratedSet(self, nm  + "_" + str(len(self.__generatedSets)+1))
+        return newSet
 
     def getGeneratedSets(self):
         return self.__generatedSets
 
+    def saveImages(self, storage):
+        im = self.getGeneratedImage()
+        if im != None:
+            imgPath = storage.toPath(self.getName()+".png")
+            im.save(imgPath)
+            log.debug("saved image to ", imgPath, function=self.saveImages)
+        for gs in self.getGeneratedSets():
+            gs.saveImages(storage)
+
+    def loadImages(self, storage):
+        imgPath = storage.toPath(self.getName()+".png")
+        self.setGeneratedImage(Image.open(imgPath))
+        for gs in self.getGeneratedSets():
+            gs.loadImages(storage)
+
 class MandelbrotProject(Project):
     def __init__(self):
         super().__init__()
-        self.rootSet = GeneratedSet(self)
+        self.rootSet = GeneratedSet(self, "root")
         self.currentSet = self.rootSet
         self.__maxIt = None
         self.persist("maxIt")
@@ -413,9 +469,8 @@ class MandelbrotProject(Project):
         else:
             areaRect = self.currentSet.getArea().getRect()
         if self.currentSet.getGeneratedImage()!=None:
-            genSet = GeneratedSet(self.currentSet)
+            genSet = self.currentSet.addGeneratedSet()
             genSet.getArea().setRect(areaRect)
-            self.currentSet.addGeneratedSet(genSet)
             self.currentSet = genSet
         await super().generate(
             img.imgengine.MandelbrotGenerator(self.getProjectSource().getSource()), 
@@ -424,6 +479,13 @@ class MandelbrotProject(Project):
             reverseColors=self.getProjectSource().getFlipGradient(), 
             area=self.currentSet.getArea().getAll()
         )
+
+    def saveImages(self, storage):
+        self.getProjectSource().saveSourceImage(storage)
+        self.getRootSet().saveImages(storage)
+
+    def loadImages(self, storage):
+        self.getRootSet().loadImages(storage)
 
 
 
@@ -500,6 +562,13 @@ class AbstractModel():
     def setAttribute(self, attrName, attrValue):
         pass
 
+    def load(self, storage):
+        pass
+
+    def save(self, storage):
+        pass
+ 
+
 class Model(AbstractModel, Publisher):
     PROJECT_TYPE_JULIA = 1
     PROJECT_TYPE_MANDELBROT = 2
@@ -523,9 +592,12 @@ class Model(AbstractModel, Publisher):
         self.dispatch("msg_new_project", {"project": self.currentProject})
         return self.currentProject
 
-    def openProject(self, data):
-        log.trace(function=self.openProject)
-        log.debug(function=self.openProject, args=data)
+    def saveProperties(self, io):
+        data = json.dumps(self.currentProject.serialize(), indent=4)
+        io.write(data)
+
+    def loadProperties(self, io):
+        data = json.load(io)
         if self.currentProject:
             del self.currentProject
         if data["type"] == "MandelbrotProject": 
@@ -536,6 +608,14 @@ class Model(AbstractModel, Publisher):
             return
         self.currentProject.deserialize(data)
         self.dispatch("msg_open_project", {"project": self.currentProject})
+
+    def load(self, storage):
+        storage.read("properties.json", self.loadProperties)
+        self.currentProject.loadImages(storage)
+
+    def save(self, storage):
+        self.currentProject.saveImages(storage)
+        storage.write("properties.json", self.saveProperties)
 
     def setAttribute(self, attrName, attrValue):
         self.currentProject.setAttribute(attrName, attrValue)
