@@ -57,8 +57,9 @@ class Controller:
         self.ps.create()
         self.model.save(self.ps)
         
-    def openProject(self):
-        self.ps.setName(self.getCurrentProject().getName())
+    def openProject(self, name=None):
+        nm = name if name!=None else self.getCurrentProject().getName()
+        self.ps.setName(nm)
         self.ps.create()
         self.model.load(self.ps)
         

@@ -1,3 +1,4 @@
+from gui import projectgallery
 import os
 from lib import log
 
@@ -33,7 +34,7 @@ class FileOperation:
 class ProjectStorage:
     def __init__(self, rootPath="storage"):
         self.rootPath = rootPath
-        self.path = None
+        self.path = os.curdir + os.sep + self.rootPath
 
     def getPath(self):
         return self.path
@@ -66,6 +67,17 @@ class ProjectStorage:
         if self.path == None: return
         fo = FileOperation(self.toPath(fileName))
         fo.read(doRead)
+
+    def getProjects(self):
+        projects = {}
+        list = os.listdir(self.path)
+        for item in list:
+            log.debug("item: ", item)
+            projects[item] = self.toPath(item)
+        return projects
+
+
+
 
 
 

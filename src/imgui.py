@@ -11,6 +11,7 @@ from base.controller import Controller
 import gui.dynctrl as dynctrl 
 import gui.zoompanel as zoompanel
 import gui.dialogs as dlg
+import gui.projectgallery as pgallery
 import gui.i18n
         
 RESOURCES="resource"
@@ -260,6 +261,9 @@ class MainWindow(wx.Frame):
         self.controller = controller
         self.model = self.controller.getModel()
 
+        self.prjGallery = pgallery.ProjectGalleryFrame(WINDOW_STYLES, self.controller)
+
+
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
  
         self.configPnl = ProjectPropertiesPanel(self, styles, self.controller, size=(310,800))
@@ -390,8 +394,9 @@ class MainWindow(wx.Frame):
         e.Skip()
 
     def onUserOpenProject(self, e):
-        #path = dlg.openProjectDialog(self)
-        self.controller.openProject()
+        self.prjGallery.construct()
+        self.prjGallery.Show()
+        #self.controller.openProject()
         e.Skip()
 
     def onUserSelectZoomMode(self, e):
