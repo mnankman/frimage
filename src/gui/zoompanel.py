@@ -20,7 +20,6 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         self.__areaRect__ = self.modelObject.getArea().getRect()
         self.__scaleFactor__ = 2
         self.__zoomRect__ = None
-        self.__selectedZoomRect__ = None
         self.__imgFitSize__ = None
         self.__mouseOver__ = False
         self.SetBackgroundColour(styles["BackgroundColour"])
@@ -40,12 +39,15 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
 
     def setImage(self, pilImg):
         if pilImg!=None:
-            self.pilImage = pilImg
+            self.__pilImage__ = pilImg
         elif isinstance(self.modelObject, base.model.Project):
-            self.pilImage = Image.new("RGB", self.modelObject.getSize())  
+            self.__pilImage__ = Image.new("RGB", self.modelObject.getSize())  
         else:
-            self.pilImage = Image.new("RGB", self.GetSize())
+            self.__pilImage__ = Image.new("RGB", self.GetSize())
         self.Refresh()
+
+    def getImage(self):
+        return self.__pilImage__
 
     def getArea(self):
         assert isinstance(self.modelObject, base.model.Project)
@@ -67,8 +69,14 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         ry = ry if ry+rh<ih else ih-rh
         return (rx,ry,rw,rh)
 
-    def setZoomRect(self):
-        self.__selectedZoomRect__ = self.getZoomRect(self.pilImage.size)
+    def getGenerationSetUnderMouse(self):
+        mx,my = self.ScreenToClient(wx.GetMousePosition())
+        sets = self.modelObject.getCurrentSet().getGeneratedSets()
+        for s in sets:
+            rx,ry,rw,rh = self.areaRectToClientRect(s.getArea().getRect())  
+            if mx>rx and my>ry and mx<rx+rw-1 and my<ry+rh-1:
+                return s      
+        return None
 
     def setMode(self, m=MODE_ZOOM):
         if m in VALID_MODES:
@@ -85,18 +93,17 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
             self.__scaleFactor__ = max-r if cur+r>=max else cur+r
         self.Refresh(eraseBackground=False)
 
-
 # ------- METHODS FOR HANDLING EVENTS -------
 
     def onModelObjectChange(self, payload):
         if "modified" in payload: return
         obj = payload["object"]
         pilImg = obj.getAttribute(self.attributeName)
-        self.setImage(pilImg)
-        self.__areaRect__ = self.modelObject.getArea().getRect()
-        self.__selectedZoomRect__ = None
-        self.__zoomRect__ = None
-        self.__imgFitSize__ = None
+        if pilImg != self.getImage():
+            self.setImage(pilImg)
+            self.__areaRect__ = self.modelObject.getArea().getRect()
+            self.__zoomRect__ = None
+            self.__imgFitSize__ = None
         
     def onResize(self, e):
         e.Skip()
@@ -115,22 +122,21 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         event.Skip()
 
     def OnMouseMove(self, event):
+        self.genSetUnder = self.getGenerationSetUnderMouse()
         self.Refresh(eraseBackground=False)
         event.Skip()
 
     def OnMouseLeftDown(self, e):
         if self.__mode__ == MODE_ZOOM:
-            self.modelObject.getArea().setRect(self.calcSelectedAreaRect())
-            self.__selectedZoomRect__ = self.getZoomRect(self.pilImage.size)
+            if self.genSetUnder!=None:
+                self.modelObject.down(self.genSetUnder)
         elif self.__mode__ == MODE_FINISH:
             pass
         e.Skip()
 
     def OnMouseRightDown(self, e):
         if self.__mode__ == MODE_ZOOM:
-            self.modelObject.getArea().setRect(self.calcSelectedAreaRect())
-            self.__selectedZoomRect__ = self.getZoomRect(self.pilImage.size)
-            wx.PostEvent(self, ZoomAreaEvent(obj=self))
+           wx.PostEvent(self, ZoomAreaEvent(area=self.calcSelectedAreaRect()))
         e.Skip()
 
     def OnMouseWheel(self, e):
@@ -141,27 +147,30 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
 
     # calculates the fractal area that corresponds with the selected rectangle
     def calcSelectedAreaRect(self):
+        return self.clientRectToAreaRect(self.__zoomRect__)
+
+    def clientRectToAreaRect(self, clientRect):
         ax,ay,aw,ah = self.__areaRect__
-        log.debug("current fractal area (as rect): ", (ax,ay,aw,ah))
-        
-        zrx,zry,zrw,zrh = self.__zoomRect__
-        log.debug("zoomrect: ", (zrx,zry,zrw,zrh))
-
+        zrx,zry,zrw,zrh = clientRect
         iw,ih = self.__imgFitSize__
-        log.debug("image fit size:", self.__imgFitSize__) 
-
         sx = zrx/iw
         sy = zry/ih
         sw = aw*self.getZoomScale()
         sh = ah*self.getZoomScale()
-        log.debug("selected rect (relative to image dimensions): ", (sx,sy,sw,sh))
-
         nx = ax+sx*aw
         ny = ay+sy*ah
+        return (nx, ny, sw, sh)
 
-        newArea = (nx, ny, sw, sh)
-        log.debug("new fractal area (as rect): ", newArea)
-        return newArea
+    def areaRectToClientRect(self, areaRect):
+        ax1,ay1,aw1,ah1 = self.__areaRect__ # current area rect
+        ax2,ay2,aw2,ah2 = areaRect
+        scale = ah2/ah1
+        iw,ih = self.__imgFitSize__
+        rw=iw*scale
+        rh=ih*scale
+        rx=iw*(ax2-ax1)/aw1
+        ry=ih*(ay2-ay1)/ah1
+        return (rx, ry, rw, rh)
 
     # calculates largest fit while maintaining aspect ratio of the image
     def calcImageFitSize(self, pilImg, targetSize):
@@ -177,13 +186,13 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
 
     def onPaint(self, event):
         event.Skip()
-        #im = self.drawSelectedRectInImage(self.pilImage)
-        im = self.pilImage
+        im = self.getImage()
         self.__imgFitSize__ = self.calcImageFitSize(im, self.GetSize())
         dc = wx.PaintDC(self)
         imr = im.resize(self.__imgFitSize__)
         dc.DrawBitmap(self.pilImageToBitmap(imr), 0, 0)
         self.drawImageSize(dc)
+        self.drawGenerationSetAreas(dc)
         if self.__mouseOver__:
             self.__zoomRect__ = self.getZoomRect(imr.size)
             if self.__mode__ == MODE_ZOOM:
@@ -215,26 +224,24 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         w,h = self.GetSize()
         dc.DrawText(txt2, 0, h-th)
 
+    def drawGenerationSetAreas(self, dc):
+        dc.SetBrush(wx.Brush("#000000", style=wx.BRUSHSTYLE_TRANSPARENT))
+        sets = self.modelObject.getCurrentSet().getGeneratedSets()
+        for s in sets:
+            if s==self.genSetUnder:
+                dc.SetPen(wx.Pen("#00ffff", width=3, style=wx.PENSTYLE_SOLID))
+            else:
+                dc.SetPen(wx.Pen("#00ffff", style=wx.PENSTYLE_DOT))
+            rx,ry,rw,rh = self.areaRectToClientRect(s.getArea().getRect())
+            dc.DrawRectangle(rx, ry, rw, rh)
+
     def drawSourceImage(self, dc):
         rx,ry,rw,rh = self.__zoomRect__
         dc.DrawRectangle(rx, ry, rw, rh)
         im = self.modelObject.getProjectSource().getSourceImage()
-        imr = im.resize(self.calcImageFitSize(im, (rw,rh)))
-        dc.DrawBitmap(self.pilImageToBitmap(imr), rx, ry)
-
-    def drawSelectedRectInImage(self, pilImg):
-        im = pilImg.copy()
-        iw,ih = im.size
-        nw,nh = self.calcImageFitSize(im, self.GetSize())
-        if self.__selectedZoomRect__!=None:
-            draw = ImageDraw.Draw(im)
-            x,y,w,h = self.__selectedZoomRect__
-            x1=x*iw/nw
-            y1=y*ih/nh
-            x2=x1+w
-            y2=y1+h
-            draw.rectangle([x1,y1,x2,y2], outline=(255,255,0))
-        return im
+        if im!=None:
+            imr = im.resize(self.calcImageFitSize(im, (rw,rh)))
+            dc.DrawBitmap(self.pilImageToBitmap(imr), rx, ry)
 
 # ------- METHODS FOR CONVERTING IMAGES -------
 

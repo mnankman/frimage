@@ -1,3 +1,4 @@
+from operator import ge
 from tempfile import NamedTemporaryFile
 from lib import log, util
 from lib.pubsub import Publisher
@@ -16,10 +17,11 @@ class ProjectSource(ModelObject):
         self.__gradientImage = None
         self.__heatmapBaseImageWidth = 10
         self.__heatmapBaseImageHeight = 10
-        self.__reverseGradient = False
+        self.__flipGradient = False
         self.persist("path", None)
         self.persist("heatmapBaseImageWidth", 10)
         self.persist("heatmapBaseImageHeight", 10)
+        self.persist("flipGradient", False)
 
     def getPath(self):
         return self.__path
@@ -44,8 +46,8 @@ class ProjectSource(ModelObject):
         self.__heatmapBaseImage = im
         self.setModified()
 
-    def setReverseGradient(self, v):
-        self.__reverseGradient = v
+    def setFlipGradient(self, v):
+        self.__flipGradient = v
         self.setModified()
 
     def setGradientImage(self, im):
@@ -92,10 +94,13 @@ class ProjectSource(ModelObject):
     def getHeatmapBaseImage(self):
         return self.__heatmapBaseImage
 
+    def getFlipGradient(self):
+        return self.__flipGradient
+
     def getGradientImage(self):
         im = self.__gradientImage
         if im!=None:
-            if self.__reverseGradient:
+            if self.__flipGradient:
                 return im.transpose(method=Image.FLIP_LEFT_RIGHT)
         return im
     
@@ -199,7 +204,6 @@ class Cxy(ModelObject):
 class Project(ModelObject):
     def __init__(self):
         super().__init__()
-        self.__reverseColors = False
         self.__name = None
         self.__width = None
         self.__height = None
@@ -209,7 +213,6 @@ class Project(ModelObject):
         self.generatedImage = None
         self.path = None
         self.progress = 0
-        self.persist("reverseColors")
         self.persist("name")
         self.persist("width")
         self.persist("height")
@@ -223,12 +226,6 @@ class Project(ModelObject):
         self.__name = name
         self.setModified()
         
-    def setReverseColors(self, reverse):
-        if self.__reverseColors != reverse:
-            self.__reverseColors = reverse
-            self.projectSource.setReverseGradient(reverse)
-            self.setModified()
-
     def setWidth(self, w):
         self.__width = w
 
@@ -259,9 +256,6 @@ class Project(ModelObject):
 
     def getName(self):
         return self.__name
-
-    def getReverseColors(self):
-        return self.__reverseColors
 
     def getSize(self):
         return (self.__width, self.__height)
@@ -308,6 +302,9 @@ class Project(ModelObject):
         self.setGeneratedImage(fractalBox.getImage())
         log.trace("generation complete")
 
+    def up(self):
+        pass
+
     def setGeneratedImage(self, im):
         self.generatedImage = im
         self.setModified()
@@ -323,10 +320,37 @@ class Project(ModelObject):
         log.trace(self.toString())
 
 
+class GeneratedSet(ModelObject):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.area = Area(self)
+        self.__generatedImage = None
+        self.__generatedSets = []
+
+    def getArea(self):
+        return self.area
+
+    def setArea(self, area):
+        self.area.setAll(area)
+
+    def getGeneratedImage(self):
+        return self.__generatedImage
+
+    def setGeneratedImage(self, im):
+        self.__generatedImage = im
+        self.setModified()
+
+    def addGeneratedSet(self, generatedSet):
+        self.__generatedSets.append(generatedSet)
+
+    def getGeneratedSets(self):
+        return self.__generatedSets
+
 class MandelbrotProject(Project):
     def __init__(self):
         super().__init__()
-        self.area = Area(self)
+        self.rootSet = GeneratedSet(self)
+        self.currentSet = self.rootSet
         self.__maxIt = None
         self.persist("maxIt")
 
@@ -338,25 +362,69 @@ class MandelbrotProject(Project):
         return self.__maxIt
 
     def getArea(self):
-        return self.area
+        return self.currentSet.getArea()
 
     def setArea(self, area):
-        self.area.setAll(area)
+        self.currentSet.setArea(area)
+        self.setModified()
+
+    # this one is needed so PersistentObject can restore it from a serialized stream
+    def getGeneratedSet(self):
+        return self.rootSet
+
+    def getRootSet(self):
+        return self.rootSet
+
+    def getCurrentSet(self):
+        return self.currentSet
 
     def reset(self):
         self.setSize((400,400))
-        self.setReverseColors(True)
         self.setArea((-2.0,1.0,-1.5,1.5))
         self.setMaxIt(256)
 
-    async def generate(self, progressHandler=None):
+    def setGeneratedImage(self, im):
+        assert self.currentSet != None
+        self.currentSet.setGeneratedImage(im)
+        self.setModified()
+
+    def getGeneratedImage(self):
+        if self.currentSet == None: return None
+        return self.currentSet.getGeneratedImage()
+
+    def down(self, genSet):
+        parent = genSet.getParent()
+        if parent != None and isinstance(genSet, GeneratedSet) and parent==self.currentSet:
+            log.debug(function=self.down, args=genSet)
+            self.currentSet = genSet
+            self.setModified()
+
+    def up(self):
+        parent = self.currentSet.getParent()
+        if parent != None and isinstance(parent, GeneratedSet):
+            log.debug(function=self.up)
+            self.currentSet = parent
+            self.setModified()
+    
+    async def generate(self, progressHandler=None, **kw):
+        log.debug(function=self.generate, args=kw)
+        if kw!=None and "area" in kw.keys():
+            areaRect = kw["area"]
+        else:
+            areaRect = self.currentSet.getArea().getRect()
+        if self.currentSet.getGeneratedImage()!=None:
+            genSet = GeneratedSet(self.currentSet)
+            genSet.getArea().setRect(areaRect)
+            self.currentSet.addGeneratedSet(genSet)
+            self.currentSet = genSet
         await super().generate(
             img.imgengine.MandelbrotGenerator(self.getProjectSource().getSource()), 
             progressHandler,
             size=self.getSize(), 
-            reverseColors=self.getReverseColors(), 
-            area=self.area.getAll()
+            reverseColors=self.getProjectSource().getFlipGradient(), 
+            area=self.currentSet.getArea().getAll()
         )
+
 
 
 class JuliaProject(Project):
@@ -393,12 +461,12 @@ class JuliaProject(Project):
         self.setCxy((-0.6523253489293293, -0.44925312958958075))
         self.setMaxIt(256)
 
-    async def generate(self, progressHandler=None):
+    async def generate(self, progressHandler=None, **kw):
         await super().generate(
             img.imgengine.JuliaGenerator(self.getProjectSource().getSource()), 
             progressHandler,
             size=self.getSize(), 
-            reverseColors=self.getReverseColors(), 
+            reverseColors=self.getProjectSource().getFlipGradient(), 
             area=self.area.getAll(), 
             cxy=self.cxy.getCxy()
         )
@@ -411,7 +479,7 @@ class AbstractModel():
     def newProject(self, projectType, name=None):
         pass
 
-    async def generate(self, progressHandler=None):
+    async def generate(self, progressHandler=None, **kw):
         pass
 
     def selectProjectSourceImage(self, path):
@@ -446,9 +514,12 @@ class Model(AbstractModel, Publisher):
         assert projectType in Model.VALID_PROJECT_TYPES
         if self.currentProject:
             del self.currentProject
-        if projectType==Model.PROJECT_TYPE_JULIA: self.currentProject = JuliaProject()
-        elif projectType==Model.PROJECT_TYPE_MANDELBROT: self.currentProject = MandelbrotProject()
-        if name!=None: self.currentProject.setName(name)
+        if projectType==Model.PROJECT_TYPE_JULIA: 
+            self.currentProject = JuliaProject()
+        elif projectType==Model.PROJECT_TYPE_MANDELBROT: 
+            self.currentProject = MandelbrotProject()
+        if name!=None: 
+            self.currentProject.setName(name)
         self.dispatch("msg_new_project", {"project": self.currentProject})
         return self.currentProject
 
@@ -469,8 +540,8 @@ class Model(AbstractModel, Publisher):
     def setAttribute(self, attrName, attrValue):
         self.currentProject.setAttribute(attrName, attrValue)
 
-    async def generate(self, progressHandler=None):
-        await self.getCurrentProject().generate(progressHandler)
+    async def generate(self, progressHandler=None, **kw):
+        await self.getCurrentProject().generate(progressHandler, **kw)
         self.dispatch("msg_generate_complete", {"generated": self.currentProject.getGeneratedImage()})
 
     def getGeneratedImage(self):

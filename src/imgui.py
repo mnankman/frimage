@@ -30,6 +30,9 @@ ID_PROJECT_GENERATE=302
 ID_PROJECT_RESET=303
 ID_PROJECT_SELECT_ZOOM_MODE=304
 ID_PROJECT_SELECT_FINISH_MODE=305
+ID_PROJECT_HISTORY_NEXT=306
+ID_PROJECT_HISTORY_PREVIOUS=307
+ID_PROJECT_HISTORY_UP=308
 
 ID_DEBUG_SHOWINSPECTIONTOOL=601
 
@@ -64,7 +67,7 @@ class ProjectPropertiesPanel(wx.Panel):
         self.projectSource = self.project.getProjectSource()
 
         self.sizer.Clear()
-        gridsizer1 = wx.FlexGridSizer(3,0,5,5)
+        gridsizer1 = wx.FlexGridSizer(4,0,5,5)
         
         im1 = dynctrl.DynamicBitmap(self, self.projectSource, "sourceImage", self.styles, size=(160,160))
         im1.SetScaleMode(wx.StaticBitmap.Scale_AspectFit)
@@ -72,7 +75,8 @@ class ProjectPropertiesPanel(wx.Panel):
         im2.SetScaleMode(wx.StaticBitmap.Scale_AspectFit)
         im3 = dynctrl.DynamicBitmap(self, self.projectSource, "gradientImage", self.styles, size=(160,20))
         im3.SetScaleMode(wx.StaticBitmap.Scale_Fill)
-        gridsizer1.AddMany([(im1, 1), (im2, 1), (im3, 1)])
+        chkBox1 = dynctrl.DynamicCheckBox(self, self.projectSource, "flipGradient", self.styles, label="flip gradient:")
+        gridsizer1.AddMany([(im1, 1), (im2, 1), (im3, 1), (chkBox1, 1)])
         self.sizer.Add(gridsizer1, 1)
         self.sizer.AddSpacer(5)
 
@@ -88,15 +92,6 @@ class ProjectPropertiesPanel(wx.Panel):
         lbl3_2 = wx.StaticText(self, label="border colour:", size=(120, 20))
         textCtrl3_1 = dynctrl.DynamicSpinCtrl(self, self.project, "borderSize", self.styles, size=(60, 18), min=0, max=50, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
         textCtrl3_2 = dynctrl.DynamicSpinCtrl(self, self.project, "borderColourPick", self.styles, size=(60, 18), min=1, max=255, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
-
-        lbl4_1 = wx.StaticText(self, label="Ax:", size=(120, 20))
-        lbl4_2 = wx.StaticText(self, label="Ay:", size=(120, 20))
-        lbl4_3 = wx.StaticText(self, label="Bx:", size=(120, 20))
-        lbl4_4 = wx.StaticText(self, label="By:", size=(120, 20))
-        textCtrl4_1 = dynctrl.DynamicTextCtrl(self, self.area, "xa", self.styles, size=(60, 18))
-        textCtrl4_2 = dynctrl.DynamicTextCtrl(self, self.area, "ya", self.styles, size=(60, 18))
-        textCtrl4_3 = dynctrl.DynamicTextCtrl(self, self.area, "xb", self.styles, size=(60, 18))
-        textCtrl4_4 = dynctrl.DynamicTextCtrl(self, self.area, "yb", self.styles, size=(60, 18))
         gridsizer2 = wx.FlexGridSizer(2, gap=(5, 5))
         gridsizer2.AddMany([
             (lbl1_1, 1), (textCtrl1_1, 1), 
@@ -104,12 +99,30 @@ class ProjectPropertiesPanel(wx.Panel):
             (lbl2_1, 1), (textCtrl2_1, 1), 
             (lbl2_2, 1), (textCtrl2_2, 1), 
             (lbl3_1, 1), (textCtrl3_1, 1), 
-            (lbl3_2, 1), (textCtrl3_2, 1),
+            (lbl3_2, 1), (textCtrl3_2, 1)
+        ])
+ 
+        '''
+        lbl4_1 = wx.StaticText(self, label="Ax:", size=(120, 20))
+        lbl4_2 = wx.StaticText(self, label="Ay:", size=(120, 20))
+        lbl4_3 = wx.StaticText(self, label="Bx:", size=(120, 20))
+        lbl4_4 = wx.StaticText(self, label="By:", size=(120, 20))
+        textCtrl4_1 = dynctrl.DynamicTextCtrl(self, self.area, "xa", self.styles, size=(120, 18))
+        textCtrl4_1.Disable()
+        textCtrl4_2 = dynctrl.DynamicTextCtrl(self, self.area, "ya", self.styles, size=(120, 18))
+        textCtrl4_2.Disable()
+        textCtrl4_3 = dynctrl.DynamicTextCtrl(self, self.area, "xb", self.styles, size=(120, 18))
+        textCtrl4_3.Disable()
+        textCtrl4_4 = dynctrl.DynamicTextCtrl(self, self.area, "yb", self.styles, size=(120, 18))
+        textCtrl4_4.Disable()
+        
+        gridsizer2.AddMany([
             (lbl4_1, 1), (textCtrl4_1, 1), 
             (lbl4_2, 1), (textCtrl4_2, 1),
             (lbl4_3, 1), (textCtrl4_3, 1), 
             (lbl4_4, 1), (textCtrl4_4, 1)
         ])
+        '''
         self.sizer.Add(gridsizer2, 1)
 
         if isinstance(project, JuliaProject):
@@ -127,8 +140,6 @@ class ProjectPropertiesPanel(wx.Panel):
             self.sizer.Add(gridsizer3, 1)
 
         gridsizer4 = wx.FlexGridSizer(1, gap=(5, 5))
-        chkBox1 = dynctrl.DynamicCheckBox(self, self.project, "reverseColors", self.styles, label="reverse colors:")
-        gridsizer4.Add(chkBox1, 1)
 
         pw,ph = self.GetSize()
         self.btnGenerate = wx.Button(self, label=_("Generate"), size=(pw, 18))
@@ -162,6 +173,10 @@ class ProjectPropertiesPanel(wx.Panel):
             self.btnGenerate.SetLabel(_("Generate"))
 
     def onGenerate(self, e):
+        if isinstance(e, zoompanel.ZoomAreaEvent):
+            self.selectedArea = e.area
+        else:
+            self.selectedArea = None
         self.progressBar.Start()
         self.btnGenerate.SetLabel(_("working") + "...")
         self.btnGenerate.Disable()
@@ -173,7 +188,7 @@ class ProjectPropertiesPanel(wx.Panel):
         e.Skip()
 
     async def generate(self):
-        await self.controller.generate(self.onProgress)
+        await self.controller.generate(self.onProgress, area=self.selectedArea)
 
 
 class ResultPanel(wx.Panel):
@@ -238,6 +253,12 @@ class ResultPanel(wx.Panel):
     def setFinishMode(self):
         self.imZmPnl.setMode(zoompanel.MODE_FINISH)
 
+    def showNextStep(self):
+        self.imZmPnl.showNextStep()
+
+    def showPreviousStep(self):
+        self.imZmPnl.showPreviousStep()
+
 class MainWindow(wx.Frame):
     def __init__(self, styles, controller):
         super().__init__(parent=None, title='Frimage Studio', size=(1200,800))
@@ -282,6 +303,7 @@ class MainWindow(wx.Frame):
         self.Bind(event=wx.EVT_MENU, handler=self.onUserSaveGeneratedImage, id=ID_FILE_SAVE_GENERATED_IMAGE)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserSelectZoomMode, id=ID_PROJECT_SELECT_ZOOM_MODE)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserSelectFinishMode, id=ID_PROJECT_SELECT_FINISH_MODE)
+        self.Bind(event=wx.EVT_MENU, handler=self.onUserProjectHistoryUp, id=ID_PROJECT_HISTORY_UP)
 
         wx.PostEvent(self, wx.MenuEvent(wx.wxEVT_MENU, ID_FILE_NEW_PROJECT_MANDELBROTPROJECT))
 
@@ -296,6 +318,7 @@ class MainWindow(wx.Frame):
         bmpReset = wx.Image(RESOURCES+"/refresh.png").ConvertToBitmap()
         bmpSelectZoomMode = wx.Image(RESOURCES+"/picture_in_picture.png").ConvertToBitmap()
         bmpSelectFinishMode = wx.Image(RESOURCES+"/image.png").ConvertToBitmap()
+        bmpUp = wx.Image(RESOURCES+"/north_west.png").ConvertToBitmap()
 
         toolbar.AddTool(ID_FILE_OPEN_PROJECT, "Open project", bmpOpen, wx.NullBitmap, wx.ITEM_NORMAL, "Open project", "Open project", None)
         toolbar.AddTool(ID_FILE_SAVE_PROJECT, "Save project", bmpSave, wx.NullBitmap, wx.ITEM_NORMAL, "Save project", "Save project", None)
@@ -307,6 +330,7 @@ class MainWindow(wx.Frame):
         toolbar.AddSeparator()
         toolbar.AddTool(ID_PROJECT_SELECT_ZOOM_MODE, "Zoom mode", bmpSelectZoomMode, wx.NullBitmap, wx.ITEM_NORMAL, "Switch to zoom mode", "Switch to zoom mode", None)
         toolbar.AddTool(ID_PROJECT_SELECT_FINISH_MODE, "Zoom mode", bmpSelectFinishMode, wx.NullBitmap, wx.ITEM_NORMAL, "Switch to finish mode", "Switch to finish mode", None)
+        toolbar.AddTool(ID_PROJECT_HISTORY_UP, "Zoom mode", bmpUp, wx.NullBitmap, wx.ITEM_NORMAL, "Show parent step", "Show parent step", None)
 
         toolbar.Realize()
 
@@ -396,6 +420,11 @@ class MainWindow(wx.Frame):
 
     def onUserSelectFinishMode(self, e):
         self.ResultPnl.setFinishMode()
+        e.Skip()
+    
+    def onUserProjectHistoryUp(self, e):
+        log.debug(function=self.onUserProjectHistoryUp)
+        self.controller.getCurrentProject().up()
         e.Skip()
 
     def onUserShowInspectionTool(self, e):
