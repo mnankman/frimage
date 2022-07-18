@@ -68,12 +68,22 @@ class ProjectStorage:
         fo = FileOperation(self.toPath(fileName))
         fo.read(doRead)
 
+    def validProject(self, prjPath):
+        log.debug(function=self.validProject, args=prjPath)
+        if not os.path.exists(prjPath): return False
+        if not os.path.exists(prjPath+"/source.png"): return False
+        if not os.path.exists(prjPath+"/root.png"): return False
+        if not os.path.exists(prjPath+"/properties.json"): return False
+        return True
+
     def getProjects(self):
         projects = {}
         list = os.listdir(self.path)
         for item in list:
-            log.debug("item: ", item)
-            projects[item] = self.toPath(item)
+            prjPath = self.toPath(item)
+            if self.validProject(prjPath):
+                log.debug("item: ", item, function=self.getProjects)
+                projects[item] = prjPath
         return projects
 
 

@@ -394,7 +394,7 @@ class MainWindow(wx.Frame):
         e.Skip()
 
     def onUserOpenProject(self, e):
-        self.prjGallery.construct()
+        self.prjGallery.loadGallery()
         self.prjGallery.Show()
         #self.controller.openProject()
         e.Skip()

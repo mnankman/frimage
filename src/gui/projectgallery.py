@@ -1,8 +1,8 @@
 import wx
-from lib import log
-
+from wx.lib.scrolledpanel import ScrolledPanel
 import gui.dynctrl as dynctrl 
 import base.filemgmt as filemgmt
+from lib import log
 
 RESOURCES="resource"
 
@@ -10,10 +10,7 @@ ID_OPEN = 500
 
 class ProjectGalleryFrame(wx.Frame):
     def __init__(self, styles, controller):
-        super().__init__(parent=None, title='Project Gallery', size=(800,600))
-        #self.SetBackgroundColour(styles["BackgroundColour"])
-        #self.SetForegroundColour(styles["ForegroundColour"])
-        self.storage = filemgmt.ProjectStorage()
+        super().__init__(parent=None, title='Project Gallery', style=wx.CAPTION | wx.CLOSE_BOX )
 
         iconFile = RESOURCES+"/icon.png"
         icon = wx.Icon(iconFile)
@@ -22,10 +19,25 @@ class ProjectGalleryFrame(wx.Frame):
         self.controller = controller
         self.model = self.controller.getModel()
 
+        self.styles = styles
+        self.applyStyles(self)
+        self.storage = filemgmt.ProjectStorage()
+
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
 
-        self.Bind(event=wx.EVT_BUTTON, handler=self.onOpen, id=ID_OPEN)
+        self.scroller = wx.ScrolledWindow(self, name="scroller")
+        self.scroller.SetInitialSize((800,600))
+        self.applyStyles(self.scroller)
+        self.sizer.Add(self.scroller, proportion=1, flag=wx.EXPAND|wx.ALL)
+        self.sizer.Layout()
+
+        self.Fit()
+        self.SetAutoLayout(True)
+
+    def applyStyles(self, obj):
+        obj.SetBackgroundColour(self.styles["BackgroundColour"])
+        obj.SetForegroundColour(self.styles["ForegroundColour"])
 
     def cleanUp(self):
         children = self.GetChildren()
@@ -33,28 +45,46 @@ class ProjectGalleryFrame(wx.Frame):
             c.Destroy()
 
     def constructProjectTile(self, name, path):
-        tile = wx.Panel(self, size=(150,170))
-        sizer = wx.FlexGridSizer(1, gap=(5, 5))
-        tile.SetSizer(sizer)
-        bmp = wx.Image(path+"/root.png").ConvertToBitmap()
-        bmpBtn = wx.BitmapButton(tile, ID_OPEN, bmp, name=name, size=(150, 150))
-        lbl = wx.StaticText(tile, label=name, size=(150, 20), style=wx.TEXT_ALIGNMENT_CENTER)
-        sizer.Add(bmpBtn, 1)
-        sizer.Add(lbl, 1)
-        tile.Center()
-        sizer.Layout()
-        return tile
+        return self.constructTile(name, path+"/root.png")
 
-    def construct(self):
-        self.sizer.Clear()
-        gridsizer = wx.FlexGridSizer(1, 0, gap=(5, 5))
+    def constructDummyTile(self, i):
+        return self.constructTile("dummy"+str(i), RESOURCES+"/icon.png")
+
+    def constructTile(self, name, bmpPath):
+        tilePnl = wx.Panel(self.scroller, size=(150,170))
+        self.applyStyles(tilePnl)
+        bmpBtn = wx.BitmapButton(tilePnl, id=ID_OPEN, 
+            bitmap=wx.Image(bmpPath).Rescale(140,140).ConvertToBitmap(), 
+            name=name, size=(150, 150), style=wx.BORDER_NONE)
+        bmpBtn.Bind(wx.EVT_BUTTON, self.onOpen)
+        lbl = wx.StaticText(tilePnl, label=name)
+        self.applyStyles(lbl)
+        self.applyStyles(bmpBtn)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        vbox.Add(bmpBtn, 1)
+        vbox.Add(lbl, 1)
+        vbox.Layout()
+        tilePnl.SetSizer(vbox)
+        return tilePnl
+
+    def loadGallery(self):
+        self.scrollsizer = wx.FlexGridSizer(cols=5, hgap=5, vgap=5)
+        self.scroller.SetSizer(self.scrollsizer)
+        self.scrollsizer.Clear()
         projects = self.storage.getProjects()
         for name, path in projects.items():
             tile = self.constructProjectTile(name, path)
-            gridsizer.Add(tile, 1)
+            self.scrollsizer.Add(tile, 1)
+        self.scrollsizer.Layout()
 
-        self.sizer.Add(gridsizer, 1)
-        self.sizer.Layout()
+    def loadDummyGallery(self):
+        self.scrollsizer = wx.FlexGridSizer(cols=5, hgap=5, vgap=5)
+        self.scrollsizer.Clear()
+        for i in range(60):
+            self.scrollsizer.Add(self.constructDummyTile(i), 1)
+        self.scrollsizer.Layout()
+        self.scroller.SetSizer(self.scrollsizer)
+        self.scroller.SetScrollRate(5,5)
 
     def onOpen(self, e):
         log.debug(function=self.onOpen, args=e.GetEventObject().GetName())
@@ -62,4 +92,3 @@ class ProjectGalleryFrame(wx.Frame):
         nm = btn.GetName()
         self.controller.openProject(nm)
         self.Hide()
-
