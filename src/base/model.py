@@ -108,7 +108,7 @@ class ProjectSource(ModelObject):
     def saveSourceImage(self, storage):
         im = self.getSourceImage()
         if im != None:
-            imgPath = storage.toPath("source.png")
+            imgPath = storage.toPath("source.png", False)
             im.save(imgPath)
             self.__path = imgPath
     
@@ -226,7 +226,7 @@ class Project(ModelObject):
         self.__artist = None
         self.__width = None
         self.__height = None
-        self.__borderSize = 5
+        self.__borderSize = 0
         self.__borderColourPick = 255
         self.projectSource = ProjectSource(self)
         self.generatedImage = None
@@ -403,7 +403,7 @@ class GeneratedSet(ModelObject):
     def saveImages(self, storage):
         im = self.getGeneratedImage()
         if im != None:
-            imgPath = storage.toPath(self.getName()+".png")
+            imgPath = storage.toPath(self.getName()+".png", False)
             im.save(imgPath)
             log.debug("saved image to ", imgPath, function=self.saveImages)
         for gs in self.getGeneratedSets():
@@ -477,7 +477,7 @@ class MandelbrotProject(Project):
     
     async def generate(self, progressHandler=None, **kw):
         log.debug(function=self.generate, args=kw)
-        if kw!=None and "area" in kw.keys():
+        if kw!=None and "area" in kw.keys() and kw["area"]!=None:
             areaRect = kw["area"]
         else:
             areaRect = self.currentSet.getArea().getRect()
@@ -557,7 +557,7 @@ class JuliaProject(Project):
         return self.currentSet
 
     def reset(self):
-        self.setSize((800,600))
+        self.setSize((600,450))
         self.setArea((-0.0008,0.0008,-0.0008,0.0008))
         self.setCxy((-0.6523253489293293, -0.44925312958958075))
         self.setMaxIt(256)
@@ -587,12 +587,11 @@ class JuliaProject(Project):
  
     async def generate(self, progressHandler=None, **kw):
         log.debug(function=self.generate, args=kw)
-        if kw!=None and "area" in kw.keys() and "cxy" in kw.keys():
+        if kw!=None and "area" in kw.keys() and kw["area"]!=None:
             areaRect = kw["area"]
-            cxy = kw["cxy"]
         else:
             areaRect = self.currentSet.getArea().getRect()
-            cxy = self.currentSet.getCxy().getCxy()
+        cxy = self.currentSet.getCxy().getCxy()
         if self.currentSet.getGeneratedImage()!=None:
             genSet = self.currentSet.addGeneratedJuliaSet()
             genSet.getArea().setRect(areaRect)

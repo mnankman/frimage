@@ -195,38 +195,41 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         dc = wx.PaintDC(self)
         imr = im.resize(self.__imgFitSize__)
         dc.DrawBitmap(self.pilImageToBitmap(imr), 0, 0)
-        self.drawImageSize(dc)
+        self.drawImageSizeTxt(dc)
         self.drawGenerationSetAreas(dc)
         if self.__mouseOver__:
             self.__zoomRect__ = self.getZoomRect(imr.size)
             if self.__mode__ == MODE_ZOOM:
                 self.drawZoomRect(dc)
+                self.drawZoomRectTxt(dc)
             elif self.__mode__ == MODE_FINISH:
                 self.drawSourceImage(dc)
 
-    def drawImageSize(self, dc):
+    def drawImageSizeTxt(self, dc):
         dc.SetPen(wx.Pen("#ffffff"))
         dc.SetBrush(wx.Brush("#0000FF", style=wx.BRUSHSTYLE_SOLID))
+        iw,ih = self.__imgFitSize__
         txt = str(self.__imgFitSize__)
         tw,th = dc.GetTextExtent(txt)
-        w,h = self.GetSize()
+        dc.DrawText(txt, iw-tw, ih-th)
+
+    def drawZoomRectTxt(self, dc):
+        dc.SetPen(wx.Pen("#ffffff"))
+        dc.SetBrush(wx.Brush("#0000FF", style=wx.BRUSHSTYLE_SOLID))
         iw,ih = self.__imgFitSize__
-        dc.DrawText(txt, iw-tw, h-th)
+        rx,ry,rw,rh = self.__zoomRect__
+        txt = str((int(rx),int(ry),int(rx+rw),int(ry+rh)))
+        tw,th = dc.GetTextExtent(txt)
+        dc.DrawText(txt, 0, ih-th)
 
     def drawZoomRect(self, dc):
         dc.SetPen(wx.Pen("#ffffff"))
         dc.SetBrush(wx.Brush("#000000", style=wx.BRUSHSTYLE_TRANSPARENT))
         rx,ry,rw,rh = self.__zoomRect__
         dc.DrawRectangle(rx, ry, rw, rh)
-
-        txt1 = str(1/self.getZoomScale())
-        tw,th = dc.GetTextExtent(txt1)
-        dc.DrawText(txt1, rx+rw-tw-2, ry+rh-th-2)
-
-        txt2 = str((int(rx),int(ry),int(rx+rw),int(ry+rh)))
-        tw,th = dc.GetTextExtent(txt2)
-        w,h = self.GetSize()
-        dc.DrawText(txt2, 0, h-th)
+        txt = str(1/self.getZoomScale())
+        tw,th = dc.GetTextExtent(txt)
+        dc.DrawText(txt, rx+rw-tw-2, ry+rh-th-2)
 
     def drawGenerationSetAreas(self, dc):
         dc.SetBrush(wx.Brush("#000000", style=wx.BRUSHSTYLE_TRANSPARENT))
@@ -240,12 +243,14 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
             if areaRect!=None: dc.DrawRectangle(*areaRect)
 
     def drawSourceImage(self, dc):
+        dc.SetPen(wx.Pen("#ffffff"))
+        dc.SetBrush(wx.Brush("#000000", style=wx.BRUSHSTYLE_TRANSPARENT))
         rx,ry,rw,rh = self.__zoomRect__
-        dc.DrawRectangle(rx, ry, rw, rh)
         im = self.modelObject.getProjectSource().getSourceImage()
         if im!=None:
             imr = im.resize(self.calcImageFitSize(im, (rw,rh)))
             dc.DrawBitmap(self.pilImageToBitmap(imr), rx, ry)
+            dc.DrawRectangle(rx, ry, *imr.size)
 
 # ------- METHODS FOR CONVERTING IMAGES -------
 
