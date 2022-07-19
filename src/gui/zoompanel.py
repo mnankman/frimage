@@ -22,6 +22,7 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         self.__zoomRect__ = None
         self.__imgFitSize__ = None
         self.__mouseOver__ = False
+        self.__genSetUnderMouseCursor__ = None
         self.SetBackgroundColour(styles["BackgroundColour"])
         self.SetForegroundColour(styles["ForegroundColour"])
         self.setImage(modelObject.getAttribute(self.attributeName))
@@ -73,9 +74,11 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         mx,my = self.ScreenToClient(wx.GetMousePosition())
         sets = self.modelObject.getCurrentSet().getGeneratedSets()
         for s in sets:
-            rx,ry,rw,rh = self.areaRectToClientRect(s.getArea().getRect())  
-            if mx>rx and my>ry and mx<rx+rw-1 and my<ry+rh-1:
-                return s      
+            areaRect = s.getArea().getRect()
+            if areaRect!=None:
+                rx,ry,rw,rh = self.areaRectToClientRect(s.getArea().getRect())  
+                if mx>rx and my>ry and mx<rx+rw-1 and my<ry+rh-1:
+                    return s      
         return None
 
     def setMode(self, m=MODE_ZOOM):
@@ -122,14 +125,14 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         event.Skip()
 
     def OnMouseMove(self, event):
-        self.genSetUnder = self.getGenerationSetUnderMouse()
+        self.__genSetUnderMouseCursor__ = self.getGenerationSetUnderMouse()
         self.Refresh(eraseBackground=False)
         event.Skip()
 
     def OnMouseLeftDown(self, e):
         if self.__mode__ == MODE_ZOOM:
-            if self.genSetUnder!=None:
-                self.modelObject.down(self.genSetUnder)
+            if self.__genSetUnderMouseCursor__!=None:
+                self.modelObject.down(self.__genSetUnderMouseCursor__)
         elif self.__mode__ == MODE_FINISH:
             pass
         e.Skip()
@@ -162,6 +165,7 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         return (nx, ny, sw, sh)
 
     def areaRectToClientRect(self, areaRect):
+        if areaRect == None: return None
         ax1,ay1,aw1,ah1 = self.__areaRect__ # current area rect
         ax2,ay2,aw2,ah2 = areaRect
         scale = ah2/ah1
@@ -228,12 +232,12 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         dc.SetBrush(wx.Brush("#000000", style=wx.BRUSHSTYLE_TRANSPARENT))
         sets = self.modelObject.getCurrentSet().getGeneratedSets()
         for s in sets:
-            if s==self.genSetUnder:
+            if s==self.__genSetUnderMouseCursor__:
                 dc.SetPen(wx.Pen("#00ffff", width=3, style=wx.PENSTYLE_SOLID))
             else:
                 dc.SetPen(wx.Pen("#00ffff", style=wx.PENSTYLE_DOT))
-            rx,ry,rw,rh = self.areaRectToClientRect(s.getArea().getRect())
-            dc.DrawRectangle(rx, ry, rw, rh)
+            areaRect = self.areaRectToClientRect(s.getArea().getRect())
+            if areaRect!=None: dc.DrawRectangle(*areaRect)
 
     def drawSourceImage(self, dc):
         rx,ry,rw,rh = self.__zoomRect__
