@@ -12,3 +12,5 @@ src/resource/*.jpg
 savedprojects/*
 photolibrary/*
 src/storage/*
+src/lib/ext/__pycache__/__init__.*.pyc
+src/lib/ext/__pycache__/colored.*.pyc
