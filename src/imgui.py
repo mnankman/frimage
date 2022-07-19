@@ -13,6 +13,7 @@ import gui.zoompanel as zoompanel
 import gui.dialogs as dlg
 import gui.projectgallery as pgallery
 import gui.i18n
+import random
         
 RESOURCES="resource"
 
@@ -134,6 +135,10 @@ class ProjectPropertiesPanel(wx.Panel):
         self.btnGenerate = wx.Button(self, label=_("Generate"), size=(pw, 18))
         btnReset = wx.Button(self, label=_("Reset"), size=(pw, 18))
         self.progressBar = progress.ProgressIndicator(self, size=(pw,5))
+        if isinstance(project, JuliaProject):
+            btnRandomCxy = wx.Button(self, label=_("Random Cx & Cy"), size=(pw, 18))
+            btnRandomCxy.Bind(wx.EVT_BUTTON, self.onRandomCxy)
+            gridsizer4.Add(btnRandomCxy, 1)
         gridsizer4.Add(btnReset, 1)
         gridsizer4.Add(self.btnGenerate, 1)
         gridsizer4.Add(self.progressBar, 1)
@@ -175,6 +180,9 @@ class ProjectPropertiesPanel(wx.Panel):
     def onReset(self, e):
         self.project.reset()
         e.Skip()
+
+    def onRandomCxy(self, e):
+        self.project.setCxy((random.random() * 2.0 - 1.0, random.random() - 0.5))
 
     async def generate(self):
         await self.controller.generate(self.onProgress, area=self.selectedArea)
@@ -398,8 +406,9 @@ class MainWindow(wx.Frame):
 
     def askSaveProject(self):
         if self.controller.getCurrentProject()==None: return
-        if dlg.message(_("Do you want to save current project?"), wx.YES_NO) == wx.ID_YES:
-            self.controller.saveProject()
+        if self.controller.getCurrentProject().isModified():
+            if dlg.message(_("Do you want to save current project?"), wx.YES_NO) == wx.ID_YES:
+                self.controller.saveProject()
 
     def onUserOpenProject(self, e):
         self.askSaveProject()

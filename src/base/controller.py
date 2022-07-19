@@ -19,13 +19,11 @@ class Controller:
     def newMandelbrotProject(self, name):
         name = self.ps.getNextName(name)
         self.model.newProject(Model.PROJECT_TYPE_MANDELBROT, name)
-        self.resetProject()
 
     def newJuliaProject(self, name):
         ps = filemgmt.ProjectStorage()
         name = self.ps.getNextName(name)
         self.model.newProject(Model.PROJECT_TYPE_JULIA, name)
-        self.resetProject()
         
     def resetProject(self):
         self.model.getCurrentProject().reset()

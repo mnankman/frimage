@@ -422,6 +422,12 @@ class MandelbrotProject(Project):
         self.currentSet = self.rootSet
         self.__maxIt = None
         self.persist("maxIt")
+        self.init()
+
+    def init(self):
+        self.setSize((400,400))
+        self.setArea((-2.0,1.0,-1.5,1.5))
+        self.setMaxIt(256)
 
     def setMaxIt(self, maxIt):
         self.__maxIt = maxIt
@@ -449,8 +455,6 @@ class MandelbrotProject(Project):
 
     def reset(self):
         self.setSize((400,400))
-        self.setArea((-2.0,1.0,-1.5,1.5))
-        self.setMaxIt(256)
 
     def setGeneratedImage(self, im):
         assert self.currentSet != None
@@ -477,11 +481,11 @@ class MandelbrotProject(Project):
     
     async def generate(self, progressHandler=None, **kw):
         log.debug(function=self.generate, args=kw)
-        if kw!=None and "area" in kw.keys() and kw["area"]!=None:
+        if kw!=None and "area" in kw.keys():
             areaRect = kw["area"]
         else:
             areaRect = self.currentSet.getArea().getRect()
-        if self.currentSet.getGeneratedImage()!=None:
+        if areaRect!=None and self.currentSet.getGeneratedImage()!=None:
             genSet = self.currentSet.addGeneratedSet()
             genSet.getArea().setRect(areaRect)
             self.currentSet = genSet
@@ -525,6 +529,13 @@ class JuliaProject(Project):
         self.currentSet = self.rootSet
         self.__maxIt = None
         self.persist("maxIt")
+        self.init()
+
+    def init(self):
+        self.setSize((600,450))
+        self.setArea((-0.0008,0.0008,-0.0008,0.0008))
+        self.setCxy((-0.6523253489293293, -0.44925312958958075))
+        self.setMaxIt(256)
 
     def setMaxIt(self, maxIt):
         self.__maxIt = maxIt
@@ -558,9 +569,7 @@ class JuliaProject(Project):
 
     def reset(self):
         self.setSize((600,450))
-        self.setArea((-0.0008,0.0008,-0.0008,0.0008))
         self.setCxy((-0.6523253489293293, -0.44925312958958075))
-        self.setMaxIt(256)
 
     def setGeneratedImage(self, im):
         assert self.currentSet != None
@@ -587,12 +596,12 @@ class JuliaProject(Project):
  
     async def generate(self, progressHandler=None, **kw):
         log.debug(function=self.generate, args=kw)
-        if kw!=None and "area" in kw.keys() and kw["area"]!=None:
+        if kw!=None and "area" in kw.keys():
             areaRect = kw["area"]
         else:
             areaRect = self.currentSet.getArea().getRect()
         cxy = self.currentSet.getCxy().getCxy()
-        if self.currentSet.getGeneratedImage()!=None:
+        if areaRect!=None and self.currentSet.getGeneratedImage()!=None:
             genSet = self.currentSet.addGeneratedJuliaSet()
             genSet.getArea().setRect(areaRect)
             genSet.getCxy().setCxy(cxy)
@@ -692,10 +701,12 @@ class Model(AbstractModel, Publisher):
     def load(self, storage):
         storage.read("properties.json", self.loadProperties)
         self.currentProject.loadImages(storage)
+        self.currentProject.clearModified()
 
     def save(self, storage):
         self.currentProject.saveImages(storage)
         storage.write("properties.json", self.saveProperties)
+        self.currentProject.clearModified()
 
     def setAttribute(self, attrName, attrValue):
         self.currentProject.setAttribute(attrName, attrValue)
