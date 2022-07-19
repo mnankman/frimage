@@ -14,3 +14,7 @@ photolibrary/*
 src/storage/*
 src/lib/ext/__pycache__/__init__.*.pyc
 src/lib/ext/__pycache__/colored.*.pyc
+src/app_base.py
+src/geni18n.py
+src/app_const.py
+src/locale/imgui.pot
