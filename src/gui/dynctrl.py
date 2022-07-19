@@ -14,7 +14,10 @@ class DynamicCtrl:
         self.modelObject.subscribe(self, "msg_object_modified", self.onModelObjectChange)
 
     def __del__(self):
-        self.modelObject.unsubscribe(self, self.onModelObjectChange)
+        try:
+            self.modelObject.unsubscribe(self, self.onModelObjectChange)
+        except AttributeError as e:
+            log.warning(e, function=self.__del__)
 
     def onUserValueChange(self, e):
         ctrl = e.GetEventObject()
