@@ -57,3 +57,36 @@ def saveImageDialog(parentFrame):
     return saveFileDialog(parentFrame, 
         message = _("Open Image"), 
         wildcard = toWildCardString(FILESPEC_IMAGES))
+
+def message(message, style=wx.OK):
+    return Messages.getInstance().message(message, style)
+
+class Messages:
+    __instance__ = None
+    def getInstance():
+        if Messages.__instance__ == None:
+            Messages.__instance__ = Messages.__Messages__()
+        return Messages.__instance__
+
+    def setWindow(window):
+        Messages.getInstance().setWindow(window)
+
+    class __Messages__:
+        def __init__(self):
+            self.__window__ = None
+
+        def getWindow(self):
+            return self.__window__
+
+        def setWindow(self, window):
+            assert isinstance(window, wx.Window)
+            self.__window__ = window
+
+        def message(self, message, style):
+            if self.__window__ != None:
+                dlg = wx.MessageDialog(self.__window__, message, style=style)
+                return dlg.ShowModal()
+            else:
+                log.error("window == None", function=self.message)
+                return None
+
