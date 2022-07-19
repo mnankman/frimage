@@ -54,15 +54,18 @@ class ProjectStorage:
     def create(self):
         makeDirs(self.getPath())
 
-    def toPath(self, fileName):
+    def toPath(self, fileName, mustExist=True):
         if self.path == None: return None
         p = self.path + os.sep + fileName
-        if os.path.exists(p): return p
+        if mustExist:
+            if os.path.exists(p): return p
+        else:
+            return p
         return None
 
     def write(self, fileName, doWrite):
         if self.path == None: return
-        fo = FileOperation(self.toPath(fileName))
+        fo = FileOperation(self.toPath(fileName, False))
         fo.write(doWrite)
 
     def read(self, fileName, doRead):
