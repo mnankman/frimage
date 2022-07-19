@@ -56,7 +56,9 @@ class ProjectStorage:
 
     def toPath(self, fileName):
         if self.path == None: return None
-        return self.path + os.sep + fileName
+        p = self.path + os.sep + fileName
+        if os.path.exists(p): return p
+        return None
 
     def write(self, fileName, doWrite):
         if self.path == None: return
