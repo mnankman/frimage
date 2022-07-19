@@ -1,6 +1,29 @@
 import logging
 import inspect
 from lib import util
+from lib.ext.colored import colored
+
+class ColorLog(object):
+
+    colormap = dict(
+        debug=dict(color='grey', attrs=['bold']),
+        info=dict(color='white'),
+        warn=dict(color='yellow'),
+        warning=dict(color='yellow'),
+        error=dict(color='red'),
+        critical=dict(color='red', attrs=['bold']),
+    )
+
+    def __init__(self, logger):
+        self._log = logger
+
+    def __getattr__(self, name):
+        if name in ['debug', 'info', 'warn', 'warning', 'error', 'critical']:
+            return lambda s, *args: getattr(self._log, name)(
+                colored(s, **self.colormap[name]), *args)
+
+        return getattr(self._log, name)
+
 
 loggers = {}
 
@@ -53,7 +76,7 @@ def getLogger():
     if modName in loggers:
         logger = loggers[modName]
     else:
-        logger = logging.getLogger(modName)
+        logger = ColorLog(logging.getLogger(modName))
         loggers[modName] = logger
         #logging.debug('new logger:', modName)
     return logger
@@ -62,7 +85,7 @@ def setLoggerLevel(modName, level):
     if modName in loggers:
         logger = loggers[modName]
     else:
-        logger = logging.getLogger(modName)
+        logger = ColorLog(logging.getLogger(modName))
         loggers[modName] = logger
     logger.setLevel(level)
 
