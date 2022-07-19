@@ -354,14 +354,17 @@ class MainWindow(wx.Frame):
         exit()
 
     def onUserExit(self, e):
+        self.askSaveProject()
         self.Close(True) 
         e.Skip()
 
     def onUserNewMandelbrotProject(self, e):
+        self.askSaveProject()
         self.controller.newMandelbrotProject("mandelbrot")
         e.Skip()
 
     def onUserNewJuliaProject(self, e):
+        self.askSaveProject()
         self.controller.newJuliaProject("julia")
         e.Skip()
 
@@ -393,10 +396,15 @@ class MainWindow(wx.Frame):
         self.selectProjectSourceImage(path)
         e.Skip()
 
+    def askSaveProject(self):
+        if self.controller.getCurrentProject()==None: return
+        if dlg.message(_("Do you want to save current project?"), wx.YES_NO) == wx.ID_YES:
+            self.controller.saveProject()
+
     def onUserOpenProject(self, e):
+        self.askSaveProject()
         self.prjGallery.loadGallery()
         self.prjGallery.Show()
-        #self.controller.openProject()
         e.Skip()
 
     def onUserSelectZoomMode(self, e):
@@ -429,6 +437,7 @@ def start():
     loop = asyncio.get_event_loop()
     controller = Controller(Model())
     w = MainWindow(WINDOW_STYLES, controller)
+    dlg.Messages.setWindow(w)
     try:
         loop.run_until_complete(app.MainLoop())
     finally:
