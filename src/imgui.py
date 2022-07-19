@@ -256,6 +256,9 @@ class ResultPanel(wx.Panel):
     def showPreviousStep(self):
         self.imZmPnl.showPreviousStep()
 
+    def saveCurrentImage(self, path):
+        self.imZmPnl.saveImage(path)
+
 class MainWindow(wx.Frame):
     def __init__(self, styles, controller):
         super().__init__(parent=None, title='Frimage Studio', size=(1200,800))
@@ -270,7 +273,6 @@ class MainWindow(wx.Frame):
         self.model = self.controller.getModel()
 
         self.prjGallery = pgallery.ProjectGalleryFrame(WINDOW_STYLES, self.controller)
-
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
  
@@ -385,7 +387,8 @@ class MainWindow(wx.Frame):
 
     def onUserSaveGeneratedImage(self, e):
         path = dlg.saveImageDialog(self)
-        self.controller.saveGeneratedImage(path)
+        self.ResultPnl.saveCurrentImage(path)
+        #self.controller.saveGeneratedImage(path)
         e.Skip()
 
     def onUserGenerate(self, e):

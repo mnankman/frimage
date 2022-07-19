@@ -3,6 +3,7 @@ import base.model
 from PIL import Image, ImageDraw
 from lib import log
 import gui.dynctrl as dynctrl
+from img.imgbox import ImageBox
 
 ZoomAreaEvent, EVT_ZOOM_AREA = wx.lib.newevent.NewEvent()
 
@@ -23,6 +24,7 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         self.__imgFitSize__ = None
         self.__mouseOver__ = False
         self.__genSetUnderMouseCursor__ = None
+        self.__SourceImageStamp__ = None
         self.SetBackgroundColour(styles["BackgroundColour"])
         self.SetForegroundColour(styles["ForegroundColour"])
         self.setImage(modelObject.getAttribute(self.attributeName))
@@ -134,12 +136,20 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
             if self.__genSetUnderMouseCursor__!=None:
                 self.modelObject.down(self.__genSetUnderMouseCursor__)
         elif self.__mode__ == MODE_FINISH:
+            x,y,w,h = self.__zoomRect__
+            fw,fh = self.calcImageFitSize(self.modelObject.getProjectSource().getSourceImage(), (w, h))
+            self.__SourceImageStamp__ = x,y,fw,fh
+            self.Refresh(eraseBackground=False)
             pass
         e.Skip()
 
     def OnMouseRightDown(self, e):
         if self.__mode__ == MODE_ZOOM:
-           wx.PostEvent(self, ZoomAreaEvent(area=self.calcSelectedAreaRect()))
+            wx.PostEvent(self, ZoomAreaEvent(area=self.calcSelectedAreaRect()))
+        elif self.__mode__ == MODE_FINISH:
+            self.__SourceImageStamp__ = None
+            self.Refresh(eraseBackground=False)
+            pass
         e.Skip()
 
     def OnMouseWheel(self, e):
@@ -197,6 +207,7 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         dc.DrawBitmap(self.pilImageToBitmap(imr), 0, 0)
         self.drawImageSizeTxt(dc)
         self.drawGenerationSetAreas(dc)
+        self.drawSourceImageStamp(dc)
         if self.__mouseOver__:
             self.__zoomRect__ = self.getZoomRect(imr.size)
             if self.__mode__ == MODE_ZOOM:
@@ -252,6 +263,14 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
             dc.DrawBitmap(self.pilImageToBitmap(imr), rx, ry)
             dc.DrawRectangle(rx, ry, *imr.size)
 
+    def drawSourceImageStamp(self, dc):
+        if self.__SourceImageStamp__!=None:
+            x,y,w,h = self.__SourceImageStamp__
+            im = self.modelObject.getProjectSource().getSourceImage()
+            if im!=None:
+                imr = im.resize(self.calcImageFitSize(im, (w,h)))
+                dc.DrawBitmap(self.pilImageToBitmap(imr), x, y)
+
 # ------- METHODS FOR CONVERTING IMAGES -------
 
     def pilImageToWxImage(self, pilImg):
@@ -263,3 +282,16 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
 
     def pilImageToBitmap(self, pilImg):
         return self.pilImageToWxImage(pilImg).ConvertToBitmap()
+
+    def saveImage(self, path):
+        im = self.__pilImage__
+        if self.__SourceImageStamp__!=None:
+            x,y,w,h = self.__SourceImageStamp__
+            srcIm = self.modelObject.getProjectSource().getSourceImage()
+            if srcIm!=None:
+                srcIm = srcIm.resize(self.calcImageFitSize(srcIm, (w,h)))
+                im = self.__pilImage__.copy()
+                im.paste(srcIm, (int(x),int(y)))
+                im.save(path)
+        else:
+            self.__pilImage__.save(path)

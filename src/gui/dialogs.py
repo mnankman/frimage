@@ -6,8 +6,8 @@ from gui import i18n
 DEFAULT_DIR = "."
 
 FILESPEC_IMAGES = {
-    "jpg": _("JPEG Images"),
-    "png": _("PNG Images")
+    "png": _("PNG Images"),
+    "jpg": _("JPEG Images")
 }
 
 FILESPEC_PROJECT = {
