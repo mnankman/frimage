@@ -126,14 +126,22 @@ class PersistentObject:
                 # apparently, the setter method exists, so use it:
                 setter = getattr(type(self), setterName)
                 log.debug(function=setter, args=attrValue)
-                setter(self, attrValue)
+                try:
+                    setter(self, attrValue)
+                except TypeError as e:
+                    log.error("TypeError: ", e, function=self.setDataAttribute, args=(attr, attrValue, typeName))
+                    raise e
                 break
             else:
                 #nope, no setter method, so now we attempt to access the attribute directly
                 if hasattr(self, nm):
                     #apperently, the attr exists, so set its value directly by using setattr
                     log.debug("set: ", nm, " = ", attrValue)
-                    setattr(self, nm, attrValue)
+                    try:
+                        setattr(self, nm, attrValue)
+                    except TypeError as e:
+                        log.error("TypeError: ", e, function=self.setDataAttribute, args=(attr, attrValue, typeName))
+                        raise e
                     break
                 else:
                     log.warning(className, "does not have an attribute named:", attr, "(", nm, ")")  
@@ -148,7 +156,10 @@ class PersistentObject:
         for item in data:
             # skip the value of "type" and "elements" (which contains serialized data for child objects)
             if not item in ["type", "elements"]:
-                self.setDataAttribute(item, data[item], self.getDataType(data))
+                try:
+                    self.setDataAttribute(item, data[item], self.getDataType(data))
+                except TypeError as e:
+                    raise e
 
     def addNestedElement(self, data, elementData):
         """
@@ -183,8 +194,11 @@ class PersistentObject:
             #self._reset()
             #self.initPersistentAttributes()
 
-            # set the persistent attributes of this instance:
-            self.setDataAttributes(data)
+            try:
+                # set the persistent attributes of this instance:
+                self.setDataAttributes(data)
+            except TypeError as e:
+                raise e
 
             elements = self.getDataElements(data)
             if elements:
@@ -204,7 +218,10 @@ class PersistentObject:
                         # verify that the found element is an instance of PersistentObject
                         assert isinstance(element, PersistentObject)
                         # now, recursively deserialize the child 
-                        element.deserialize(e)
+                        try:
+                            element.deserialize(e)
+                        except TypeError as e:
+                            raise e
                     elif hasattr(type(self), elementAdderName):
                         # apparently, a getter does not exist, but an adder does, so use that to access the child
                         addElement = getattr(type(self), elementAdderName)
@@ -213,7 +230,10 @@ class PersistentObject:
                         #assert isinstance(element, PersistentObject)
                         if isinstance(element, PersistentObject):
                             # now, recursively deserialize the child 
-                            element.deserialize(e)
+                            try:
+                                element.deserialize(e)
+                            except TypeError as e:
+                                raise e
                         else:
                             log.error(className + "." + elementAdderName + " returned an object of type: " + str(element) + " where PersistentObject is expected")
                     else:

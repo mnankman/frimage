@@ -139,29 +139,37 @@ class Area(ModelObject):
     def getAll(self): return (self.__xa, self.__xb, self.__ya, self.__yb)
 
     def getRect(self): 
-        return (self.__xa, self.__ya, self.__xb - self.__xa, self.__yb - self.__ya)
+        try:
+            rect = (self.__xa, self.__ya, self.__xb - self.__xa, self.__yb - self.__ya)
+        except TypeError as e:
+            rect = None
+        return rect
 
     def setXa(self, v): 
-        log.debug(function=self.setXa, args=float(v))
-        self.__xa = float(v)
+        fv = float(v) if v!=None else None
+        log.debug(function=self.setXa, args=fv)
+        self.__xa = fv
         self.setModified()
         log.debug("area:", self.toString())
 
     def setXb(self, v): 
-        log.debug(function=self.setXb, args=float(v))
-        self.__xb = float(v)
+        fv = float(v) if v!=None else None
+        log.debug(function=self.setXb, args=fv)
+        self.__xb = fv
         self.setModified()
         log.debug("area:", self.toString())
 
     def setYa(self, v): 
-        log.debug(function=self.setYa, args=float(v))
-        self.__ya = float(v)
+        fv = float(v) if v!=None else None
+        log.debug(function=self.setYa, args=fv)
+        self.__ya = fv
         self.setModified()
         log.debug("area:", self.toString())
 
     def setYb(self, v): 
-        log.debug(function=self.setYb, args=float(v))
-        self.__yb = float(v)
+        fv = float(v) if v!=None else None
+        log.debug(function=self.setYb, args=fv)
+        self.__yb = fv
         self.setModified()
         log.debug("area:", self.toString())
 
@@ -194,11 +202,13 @@ class Cxy(ModelObject):
     def getCxy(self): return (self.__cx, self.__cy)
 
     def setCx(self, v): 
-        self.__cx = float(v)
+        fv = float(v) if v!=None else None
+        self.__cx = fv
         self.setModified()
 
     def setCy(self, v): 
-        self.__cy = float(v)
+        fv = float(v) if v!=None else None
+        self.__cy = fv
         self.setModified()
 
     def setCxy(self, cxy):
@@ -381,8 +391,11 @@ class GeneratedSet(ModelObject):
             nm = self.getName()
         else:
             nm = "step"
-        newSet = GeneratedSet(self, nm  + "_" + str(len(self.__generatedSets)+1))
+        newSet = self.__construct__(nm  + "_" + str(len(self.__generatedSets)+1))
         return newSet
+
+    def __construct__(self, nm):
+        return GeneratedSet(self, nm)
 
     def getGeneratedSets(self):
         return self.__generatedSets
@@ -398,7 +411,7 @@ class GeneratedSet(ModelObject):
 
     def loadImages(self, storage):
         imgPath = storage.toPath(self.getName()+".png")
-        self.setGeneratedImage(Image.open(imgPath))
+        if imgPath!=None: self.setGeneratedImage(Image.open(imgPath))
         for gs in self.getGeneratedSets():
             gs.loadImages(storage)
 
@@ -487,13 +500,29 @@ class MandelbrotProject(Project):
     def loadImages(self, storage):
         self.getRootSet().loadImages(storage)
 
+class GeneratedJuliaSet(GeneratedSet):
+    def __init__(self, parent, name):
+        super().__init__(parent, name)
+        self.cxy = Cxy(self)
+
+    def getCxy(self):
+        return self.cxy
+
+    def setCxy(self, cxy):
+        self.cxy.setCxy(cxy)
+
+    def __construct__(self, nm):
+        return GeneratedJuliaSet(self, nm)
+
+    def addGeneratedJuliaSet(self):
+        return GeneratedSet.addGeneratedSet(self)
 
 
 class JuliaProject(Project):
     def __init__(self):
         super().__init__()
-        self.area = Area(self)
-        self.cxy = Cxy(self)
+        self.rootSet = GeneratedJuliaSet(self, "root")
+        self.currentSet = self.rootSet
         self.__maxIt = None
         self.persist("maxIt")
 
@@ -505,33 +534,85 @@ class JuliaProject(Project):
         return self.__maxIt
 
     def getArea(self):
-        return self.area
+        return self.currentSet.getArea()
 
     def setArea(self, area):
-        self.area.setAll(area)
+        self.currentSet.setArea(area)
+        self.setModified()
 
     def getCxy(self):
-        return self.cxy
+        return self.currentSet.getCxy()
 
     def setCxy(self, cxy):
-        self.cxy.setCxy(cxy)
+        self.currentSet.setCxy(cxy)
+
+    # this one is needed so PersistentObject can restore it from a serialized stream
+    def getGeneratedJuliaSet(self):
+        return self.rootSet
+
+    def getRootSet(self):
+        return self.rootSet
+
+    def getCurrentSet(self):
+        return self.currentSet
 
     def reset(self):
         self.setSize((800,600))
-        self.setReverseColors(True)
         self.setArea((-0.0008,0.0008,-0.0008,0.0008))
         self.setCxy((-0.6523253489293293, -0.44925312958958075))
         self.setMaxIt(256)
 
+    def setGeneratedImage(self, im):
+        assert self.currentSet != None
+        self.currentSet.setGeneratedImage(im)
+        self.setModified()
+
+    def getGeneratedImage(self):
+        if self.currentSet == None: return None
+        return self.currentSet.getGeneratedImage()
+
+    def down(self, genSet):
+        parent = genSet.getParent()
+        if parent != None and isinstance(genSet, GeneratedSet) and parent==self.currentSet:
+            log.debug(function=self.down, args=genSet)
+            self.currentSet = genSet
+            self.setModified()
+
+    def up(self):
+        parent = self.currentSet.getParent()
+        if parent != None and isinstance(parent, GeneratedSet):
+            log.debug(function=self.up)
+            self.currentSet = parent
+            self.setModified()
+ 
     async def generate(self, progressHandler=None, **kw):
+        log.debug(function=self.generate, args=kw)
+        if kw!=None and "area" in kw.keys() and "cxy" in kw.keys():
+            areaRect = kw["area"]
+            cxy = kw["cxy"]
+        else:
+            areaRect = self.currentSet.getArea().getRect()
+            cxy = self.currentSet.getCxy().getCxy()
+        if self.currentSet.getGeneratedImage()!=None:
+            genSet = self.currentSet.addGeneratedJuliaSet()
+            genSet.getArea().setRect(areaRect)
+            genSet.getCxy().setCxy(cxy)
+            self.currentSet = genSet
         await super().generate(
             img.imgengine.JuliaGenerator(self.getProjectSource().getSource()), 
             progressHandler,
             size=self.getSize(), 
             reverseColors=self.getProjectSource().getFlipGradient(), 
-            area=self.area.getAll(), 
-            cxy=self.cxy.getCxy()
+            area=self.currentSet.getArea().getAll(),
+            cxy=self.currentSet.getCxy().getCxy()
         )
+
+    def saveImages(self, storage):
+        self.getProjectSource().saveSourceImage(storage)
+        self.getRootSet().saveImages(storage)
+
+    def loadImages(self, storage):
+        self.getRootSet().loadImages(storage)
 
 
 class AbstractModel():
