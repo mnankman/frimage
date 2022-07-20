@@ -23,13 +23,17 @@ class ProjectGalleryFrame(wx.Frame):
         self.applyStyles(self)
         self.storage = filemgmt.ProjectStorage()
 
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self.sizer)
 
         self.scroller = wx.ScrolledWindow(self, name="scroller")
         self.scroller.SetInitialSize((800,600))
         self.applyStyles(self.scroller)
-        self.sizer.Add(self.scroller, proportion=1, flag=wx.EXPAND|wx.ALL)
+        self.sizer.Add(self.scroller, proportion=8, flag=wx.EXPAND|wx.ALL)
+
+        self.selPrjPnl = self.constructSelectedProjectPanel()
+        self.sizer.Add(self.selPrjPnl, 3)
+
         self.sizer.Layout()
 
         self.Fit()
@@ -46,9 +50,6 @@ class ProjectGalleryFrame(wx.Frame):
 
     def constructProjectTile(self, name, path):
         return self.constructTile(name, path+"/root.png")
-
-    def constructDummyTile(self, i):
-        return self.constructTile("dummy"+str(i), RESOURCES+"/icon.png")
 
     def constructTile(self, name, bmpPath):
         tilePnl = wx.Panel(self.scroller, size=(150,170))
@@ -67,6 +68,23 @@ class ProjectGalleryFrame(wx.Frame):
         tilePnl.SetSizer(vbox)
         return tilePnl
 
+    def constructSelectedProjectPanel(self):
+        selPrjPnl = wx.Panel(self, size=(80, 600), style=wx.BORDER_SIMPLE)
+        self.applyStyles(selPrjPnl)
+        btnOpen = wx.Button(selPrjPnl, id=ID_OPEN, label=_("Open"), name="Open Project", size=(80, 20))
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        vbox.Add(self.constructProjectInfoGrid(selPrjPnl), 10)
+        vbox.Add(btnOpen, proportion=1, flag=wx.EXPAND|wx.ALL)
+        vbox.Layout()
+        selPrjPnl.SetSizer(vbox)
+        return selPrjPnl
+
+    def constructProjectInfoGrid(self, container):
+        infoGrid = wx.FlexGridSizer(cols=1, hgap=5, vgap=5)
+        txt = wx.StaticText(container, label="project info")
+        infoGrid.Add(txt, 1)
+        return infoGrid
+
     def loadGallery(self):
         self.scrollsizer = wx.FlexGridSizer(cols=5, hgap=5, vgap=5)
         self.scroller.SetSizer(self.scrollsizer)
@@ -76,6 +94,9 @@ class ProjectGalleryFrame(wx.Frame):
             tile = self.constructProjectTile(name, path)
             self.scrollsizer.Add(tile, 1)
         self.scrollsizer.Layout()
+
+    def constructDummyTile(self, i):
+        return self.constructTile("dummy"+str(i), RESOURCES+"/icon.png")
 
     def loadDummyGallery(self):
         self.scrollsizer = wx.FlexGridSizer(cols=5, hgap=5, vgap=5)
