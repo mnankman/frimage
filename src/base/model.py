@@ -1,5 +1,7 @@
 from operator import ge
 from tempfile import NamedTemporaryFile
+
+from numpy import deprecate_with_doc
 from lib import log, util
 from lib.pubsub import Publisher
 from lib.modelobject import ModelObject
@@ -399,6 +401,13 @@ class GeneratedSet(ModelObject):
 
     def getGeneratedSets(self):
         return self.__generatedSets
+
+    def getDepth(self, d=1):
+        depth = d
+        for s in self.__generatedSets:
+            sd = s.getDepth(d+1)
+            depth = sd if sd>depth else depth
+        return depth
 
     def saveImages(self, storage):
         im = self.getGeneratedImage()

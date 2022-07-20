@@ -252,6 +252,10 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
                 dc.SetPen(wx.Pen("#00ffff", style=wx.PENSTYLE_DOT))
             areaRect = self.areaRectToClientRect(s.getArea().getRect())
             if areaRect!=None: dc.DrawRectangle(*areaRect)
+            txt = str(s.getDepth())
+            tw,th = dc.GetTextExtent(txt)
+            rx,ry,rw,rh = areaRect
+            dc.DrawText(txt, rx+rw-tw-2, ry+rh-th-2)
 
     def drawSourceImage(self, dc):
         dc.SetPen(wx.Pen("#ffffff"))

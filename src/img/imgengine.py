@@ -22,9 +22,9 @@ class Source:
         self.init(heatmapBaseImageSize)
 
     def init(self, heatmapBaseImageSize=(10,10)):
-        w,h = self.sourceImage.size
+        sw,sh = self.sourceImage.size
         mw,mh = heatmapBaseImageSize
-        self.heatmapBaseImage = self.sourceImage.resize((w if w<mw else mw, h if h<mh else mh))
+        self.heatmapBaseImage = self.sourceImage.resize((sw if sw<mw else mw, sh if sh<mh else mh))
         self.heatmap = []
         color_count = {}
         img = self.heatmapBaseImage
