@@ -31,8 +31,8 @@ class Controller:
     def setAttribute(self, attrName, attrValue):
         self.model.setAttribute(attrName, attrValue)
 
-    async def generate(self, progressHandler=None, **kw):
-        await self.model.generate(progressHandler, **kw)
+    async def generate(self, progressHandler=None, preview=False, **kw):
+        await self.model.generate(progressHandler, preview, **kw)
 
     def getGeneratedImage(self):
         return self.model.getGeneratedImage()

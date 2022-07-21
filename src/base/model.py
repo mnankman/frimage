@@ -324,8 +324,11 @@ class Project(ModelObject):
         log.debug(function=self.onProgress, args=p)
         self.setProgress(p)
 
-    async def generate(self, generator, progressHandler=None, **setup):
-        log.debug(function=self.generate, args=(generator, setup))
+    async def generate(self, generator, progressHandler=None, preview=False, **setup):
+        log.debug(function=self.generate, args=(generator, preview, setup))
+        if preview:
+            w,h = setup["size"]
+            setup["size"] = (int(w/10), int(h/10))
         generator.setup(**setup)
         h = self.onProgress if progressHandler==None else progressHandler
         self.setProgress(0)
@@ -502,7 +505,7 @@ class MandelbrotProject(Project):
             self.generator.source = self.getProjectSource().getSource()
             self.setGeneratedImage(self.generator.getImage())
 
-    async def generate(self, progressHandler=None, **kw):
+    async def generate(self, progressHandler=None, preview=False, **kw):
         log.debug(function=self.generate, args=kw)
         self.generator = img.imgengine.MandelbrotGenerator(self.getProjectSource().getSource())
         if kw!=None and "area" in kw.keys():
@@ -516,6 +519,7 @@ class MandelbrotProject(Project):
         await super().generate(
             self.generator, 
             progressHandler,
+            preview,
             size=self.getSize(), 
             reverseColors=self.getProjectSource().getFlipGradient(), 
             area=self.currentSet.getArea().getAll()
@@ -624,8 +628,8 @@ class JuliaProject(Project):
         if self.generator:
             self.generator.source = self.getProjectSource().getSource()
             self.setGeneratedImage(self.generator.getImage())
-            
-    async def generate(self, progressHandler=None, **kw):
+
+    async def generate(self, progressHandler=None, preview=False, **kw):
         log.debug(function=self.generate, args=kw)
         self.generator = img.imgengine.JuliaGenerator(self.getProjectSource().getSource())
         if kw!=None and "area" in kw.keys():
@@ -641,6 +645,7 @@ class JuliaProject(Project):
         await super().generate(
             self.generator, 
             progressHandler,
+            preview,
             size=self.getSize(), 
             reverseColors=self.getProjectSource().getFlipGradient(), 
             area=self.currentSet.getArea().getAll(),
@@ -743,8 +748,8 @@ class Model(AbstractModel, Publisher):
     def setAttribute(self, attrName, attrValue):
         self.currentProject.setAttribute(attrName, attrValue)
 
-    async def generate(self, progressHandler=None, **kw):
-        await self.getCurrentProject().generate(progressHandler, **kw)
+    async def generate(self, progressHandler=None, preview=False, **kw):
+        await self.getCurrentProject().generate(progressHandler, preview, **kw)
         self.dispatch("msg_generate_complete", {"generated": self.currentProject.getGeneratedImage()})
 
     def getGeneratedImage(self):
