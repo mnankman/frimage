@@ -1,5 +1,6 @@
 import math
 from PIL import Image, ImageDraw
+from lib import log
 
 class ImageBox:
     ORIENTATION_HORIZONTAL = 0
@@ -14,6 +15,9 @@ class ImageBox:
         self.background = background
 
     def addImage(self, im):
+        log.debug(function=self.addImage, args=im)
+        assert im
+        assert isinstance(im, Image.Image)
         self.images.append(im)
         self.layout()
 
