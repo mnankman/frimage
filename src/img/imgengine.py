@@ -2,6 +2,8 @@ import math
 from PIL import Image, ImageDraw
 import random
 from .imgbox import ImageBox
+import numpy as np
+from lib import log
             
 def gaussian(x, a, b, c, d=0):
     return a * math.exp(-(x - b)**2 / (2 * c**2)) + d
@@ -78,44 +80,40 @@ class Source:
     def getHeatmapBaseImage(self):
         return self.heatmapBaseImage
 
-class ImageGenerator:
+class FractalGenerator:
     def __init__(self, source, size=(512,512), reverseColors=False):
         self.source = source
         self.size = size
         self.reverseColors = reverseColors
+        self.image = None
 
     def setup(self, **parameters):
         for k in parameters.keys():
             if hasattr(self, k):
                 setattr(self, k, parameters[k])
+
+    def plot(self, progressHandler=None):
+        pass
         
     async def generate(self, progressHandler=None):
-        self.image = Image.new("RGB", self.size)
+        self.plot(progressHandler=progressHandler)
 
     def getImage(self): 
-        return self.image
+        return None
 
-class JuliaGenerator(ImageGenerator):
+class JuliaGenerator(FractalGenerator):
     def __init__(self, source, size=(512,512), reverseColors=False, area=(-2.0,1.0,-1.5,1.5), cxy=None, maxIt=256):
         super().__init__(source, size, reverseColors)
         self.area = area
         self.cxy = cxy
         self.maxIt = maxIt
 
-    async def generate(self, progressHandler=None):
-        self.image = Image.new("RGB", self.size)
-        self.pixels = self.source.getGradientPixels(self.maxIt, self.reverseColors)
-        ld = self.image.load()
-        
-        # Julia set to draw
-        print("cxy=", self.cxy)
+    def plot(self, progressHandler=None):
         cx, cy = self.cxy if self.cxy!=None else (random.random() * 2.0 - 1.0, random.random() - 0.5)
         c = complex(cx, cy)
-        
-        # drawing area (xa < xb and ya < yb)
-        xa,xb,ya,yb = self.area
-        
-        w, h = self.image.size
+        w,h = self.size
+        self.plotValues = np.empty(self.size)
+        xa,xb,ya,yb = self.area  # drawing area (xa < xb and ya < yb)
         for y in range(h):
             zy = y * (yb - ya) / (h - 1) + ya
             for x in range(w):
@@ -124,14 +122,24 @@ class JuliaGenerator(ImageGenerator):
                 for i in range(self.maxIt):
                     if abs(z) > 2.0: break 
                     z = z * z + c 
-                ld[x,y] = self.pixels[i]
+                self.plotValues[x,y] = i
             if progressHandler!=None and y % 10 == 0:
                 progressHandler(self, int(100*y/h))
         progressHandler(self, 100)
 
     def getImage(self):
-        return self.image
-
+        self.pixels = self.source.getGradientPixels(self.maxIt, self.reverseColors)
+        if self.plotValues.any():
+            image = Image.new("RGB", self.size)
+            ld = image.load()
+            w,h = self.size
+            for y in range(h):
+                for x in range(w):
+                    ld[x,y] = self.pixels[int(self.plotValues[x,y])]
+            return image
+        else:
+            return None
+ 
     def getFancyImage(self):
         sourceBox = ImageBox(ImageBox.ORIENTATION_HORIZONTAL, 2, 2, self.pixels[255])
         sourceBox.addImage(self.source.getSourceImage())
@@ -145,21 +153,16 @@ class JuliaGenerator(ImageGenerator):
         im.paste(sourceBox.getImage(), (10,h-sh-10))
         return im
 
-class MandelbrotGenerator(ImageGenerator):
+class MandelbrotGenerator(FractalGenerator):
     def __init__(self, source, size=(512,512), reverseColors=False, area=(-2.0,1.0,-1.5,1.5), maxIt=256):
         super().__init__(source, size, reverseColors)
         self.area = area
         self.maxIt = maxIt
 
-    async def generate(self, progressHandler=None):
-        self.image = Image.new("RGB", self.size)
-        self.pixels = self.source.getGradientPixels(self.maxIt, self.reverseColors)
-        ld = self.image.load()
-        
-        # drawing area (xa < xb and ya < yb)
-        xa,xb,ya,yb = self.area
-
-        w,h = self.image.size        
+    def plot(self, progressHandler=None):
+        w,h = self.size
+        self.plotValues = np.empty(self.size)
+        xa,xb,ya,yb = self.area  # drawing area (xa < xb and ya < yb)
         for y in range(h):
             cy = y * (yb - ya) / (h - 1)  + ya
             for x in range(w):
@@ -169,13 +172,23 @@ class MandelbrotGenerator(ImageGenerator):
                 for i in range(self.maxIt):
                     if abs(z) > 2.0: break 
                     z = z * z + c 
-                ld[x,y] = self.pixels[i]
+                self.plotValues[x,y] = i
             if progressHandler!=None and y % 10 == 0:
                 progressHandler(self, int(100*y/h))
         progressHandler(self, 100)
 
     def getImage(self):
-        return self.image
+        self.pixels = self.source.getGradientPixels(self.maxIt, self.reverseColors)
+        if self.plotValues.any():
+            image = Image.new("RGB", self.size)
+            ld = image.load()
+            w,h = self.size
+            for y in range(h):
+                for x in range(w):
+                    ld[x,y] = self.pixels[int(self.plotValues[x,y])]
+            return image
+        else:
+            return None
 
     def getFancyImage(self):
         sourceBox = ImageBox(ImageBox.ORIENTATION_HORIZONTAL, 2, 2, self.pixels[255])

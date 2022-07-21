@@ -107,6 +107,9 @@ class ProjectSource(ModelObject):
                 return im.transpose(method=Image.FLIP_LEFT_RIGHT)
         return im
 
+    def getGradientPixels(self, w):
+        return self.__source.getGradientPixels(w, self.__flipGradient)
+
     def saveSourceImage(self, storage):
         im = self.getSourceImage()
         if im != None:
@@ -277,6 +280,9 @@ class Project(ModelObject):
     def getProjectSourceImage(self):
         return self.projectSource.getSource().getSourceImage()
 
+    def setProjectSourceImage(self, path):
+        self.projectSource.setPath(path)
+
     def getProjectSource(self):
         return self.projectSource
 
@@ -319,14 +325,15 @@ class Project(ModelObject):
         self.setProgress(p)
 
     async def generate(self, generator, progressHandler=None, **setup):
-        log.trace(function=self.generate, args=(generator, setup))
+        log.debug(function=self.generate, args=(generator, setup))
         generator.setup(**setup)
         h = self.onProgress if progressHandler==None else progressHandler
         self.setProgress(0)
         await generator.generate(progressHandler=h)
         b = self.getBorderSize()
         p = self.getBorderColourPick()        
-        fractalBox = ImageBox(ImageBox.ORIENTATION_HORIZONTAL, b, b, generator.pixels[p])
+        pixels = self.getProjectSource().getGradientPixels(generator.maxIt)
+        fractalBox = ImageBox(ImageBox.ORIENTATION_HORIZONTAL, b, b, pixels[p])
         fractalBox.addImage(generator.getImage())
         self.setGeneratedImage(fractalBox.getImage())
         log.trace("generation complete")
@@ -429,6 +436,7 @@ class MandelbrotProject(Project):
         super().__init__()
         self.rootSet = GeneratedSet(self, "root")
         self.currentSet = self.rootSet
+        self.generator = None
         self.__maxIt = None
         self.persist("maxIt")
         self.init()
@@ -487,9 +495,16 @@ class MandelbrotProject(Project):
             log.debug(function=self.up)
             self.currentSet = parent
             self.setModified()
-    
+
+    def setProjectSourceImage(self, path):
+        super().setProjectSourceImage(path)
+        if self.generator:
+            self.generator.source = self.getProjectSource().getSource()
+            self.setGeneratedImage(self.generator.getImage())
+
     async def generate(self, progressHandler=None, **kw):
         log.debug(function=self.generate, args=kw)
+        self.generator = img.imgengine.MandelbrotGenerator(self.getProjectSource().getSource())
         if kw!=None and "area" in kw.keys():
             areaRect = kw["area"]
         else:
@@ -499,7 +514,7 @@ class MandelbrotProject(Project):
             genSet.getArea().setRect(areaRect)
             self.currentSet = genSet
         await super().generate(
-            img.imgengine.MandelbrotGenerator(self.getProjectSource().getSource()), 
+            self.generator, 
             progressHandler,
             size=self.getSize(), 
             reverseColors=self.getProjectSource().getFlipGradient(), 
@@ -536,6 +551,7 @@ class JuliaProject(Project):
         super().__init__()
         self.rootSet = GeneratedJuliaSet(self, "root")
         self.currentSet = self.rootSet
+        self.generator = None
         self.__maxIt = None
         self.persist("maxIt")
         self.init()
@@ -603,8 +619,15 @@ class JuliaProject(Project):
             self.currentSet = parent
             self.setModified()
  
+    def setProjectSourceImage(self, path):
+        super().setProjectSourceImage(path)
+        if self.generator:
+            self.generator.source = self.getProjectSource().getSource()
+            self.setGeneratedImage(self.generator.getImage())
+            
     async def generate(self, progressHandler=None, **kw):
         log.debug(function=self.generate, args=kw)
+        self.generator = img.imgengine.JuliaGenerator(self.getProjectSource().getSource())
         if kw!=None and "area" in kw.keys():
             areaRect = kw["area"]
         else:
@@ -616,7 +639,7 @@ class JuliaProject(Project):
             genSet.getCxy().setCxy(cxy)
             self.currentSet = genSet
         await super().generate(
-            img.imgengine.JuliaGenerator(self.getProjectSource().getSource()), 
+            self.generator, 
             progressHandler,
             size=self.getSize(), 
             reverseColors=self.getProjectSource().getFlipGradient(), 
@@ -733,7 +756,7 @@ class Model(AbstractModel, Publisher):
     def selectProjectSourceImage(self, path):
         log.trace(function=self.selectProjectSourceImage, args=path)
         if self.currentProject:
-            self.currentProject.getProjectSource().setPath(path)
+            self.currentProject.setProjectSourceImage(path)
             self.dispatch("msg_sourceimage_selected", {"source": self.currentProject.getProjectSource().getSource()})
 
     def getCurrentProject(self):
