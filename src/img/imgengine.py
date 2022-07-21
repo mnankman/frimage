@@ -203,3 +203,57 @@ class MandelbrotGenerator(FractalGenerator):
         im.paste(sourceBox.getImage(), (5,5))
         return im
 
+from decimal import Decimal
+class SmoothMandelbrotGenerator(FractalGenerator):
+    def __init__(self, source, size=(512,512), reverseColors=False, area=(-2.0,1.0,-1.5,1.5), maxIt=256):
+        super().__init__(source, size, reverseColors)
+        self.area = area
+        self.maxIt = maxIt
+
+    def plot(self, progressHandler=None):
+        w,h = self.size
+        self.plotValues = np.empty(self.size)
+        xa,xb,ya,yb = self.area  # drawing area (xa < xb and ya < yb)
+        mu_max = 0
+        for y in range(h):
+            cy = y * (yb - ya) / (h - 1)  + ya
+            for x in range(w):
+                cx = x * (xb - xa) / (w - 1) + xa
+                c = complex(cx, cy)
+                z = complex(0, 0)
+                for i in range(self.maxIt):
+                    modulus = Decimal(math.sqrt(z.real*z.real + z.imag*z.imag))
+                    if modulus > 2.0: break
+                    z = z*z+c 
+
+                for n in range(2): z=z*z+c
+                i += n+1
+                modulus = Decimal(math.sqrt(z.real*z.real + z.imag*z.imag))
+                try:
+                    mu = i - math.log(math.log(modulus)) / math.log(Decimal(2.0))
+                except ValueError as ve:
+                    mu = i
+                finally:
+                    mu_max = mu if mu>mu_max else mu_max
+                    self.plotValues[x,y] = int(mu)
+
+            if progressHandler!=None and y % 10 == 0:
+                progressHandler(self, int(100*y/h))
+        progressHandler(self, 100)
+
+    def getImage(self):
+        self.pixels = self.source.getGradientPixels(int(1.1*self.maxIt), self.reverseColors)
+        if self.plotValues.any():
+            image = Image.new("RGB", self.size)
+            ld = image.load()
+            w,h = self.size
+            for y in range(h):
+                for x in range(w):
+                    try:
+                        ld[x,y] = self.pixels[int(self.plotValues[x,y])]
+                    except IndexError as e:
+                        log.error("plotvalue=",  self.plotValues[x,y])
+                        raise e
+            return image
+        else:
+            return None
