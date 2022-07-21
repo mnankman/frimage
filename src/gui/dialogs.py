@@ -6,8 +6,12 @@ from gui import i18n
 DEFAULT_DIR = "."
 
 FILESPEC_IMAGES = {
+    "jpg": _("JPEG Images"),
     "png": _("PNG Images"),
-    "jpg": _("JPEG Images")
+}
+
+FILESPEC_PNG = {
+    "png": _("PNG Images")
 }
 
 FILESPEC_PROJECT = {
@@ -56,7 +60,7 @@ def openImageDialog(parentFrame):
 def saveImageDialog(parentFrame):
     return saveFileDialog(parentFrame, 
         message = _("Open Image"), 
-        wildcard = toWildCardString(FILESPEC_IMAGES))
+        wildcard = toWildCardString(FILESPEC_PNG))
 
 def message(message, style=wx.OK):
     return Messages.getInstance().message(message, style)
