@@ -2,6 +2,7 @@ import json
 from lib import log
 from base.model import Model, AbstractModel
 import base.filemgmt as filemgmt
+import asyncio
 
 class Controller:
     def __init__(self, model):
@@ -31,8 +32,17 @@ class Controller:
     def setAttribute(self, attrName, attrValue):
         self.model.setAttribute(attrName, attrValue)
 
-    async def generate(self, progressHandler=None, preview=False, **kw):
-        await self.model.generate(progressHandler, preview, **kw)
+    async def generate(self, progressHandler=None, **kw):
+        await self.model.generate(progressHandler, **kw)
+
+    async def startPreview(self, **kw):
+        log.trace(function=self.startPreview)
+        while self.getCurrentProject().getPreview():
+            if self.getCurrentProject().isModified():
+                await self.getModel().preview(**kw)
+                #self.getCurrentProject().clearModified()
+            await asyncio.sleep(2)
+        log.trace("previewing stopped")
 
     def getGeneratedImage(self):
         return self.model.getGeneratedImage()

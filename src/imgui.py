@@ -132,7 +132,10 @@ class ProjectPropertiesPanel(wx.Panel):
         gridsizer4 = wx.FlexGridSizer(1, gap=(5, 5))
 
         pw,ph = self.GetSize()
-        self.chkBoxPreview = wx.CheckBox(self, label="preview")
+        chkPreview = dynctrl.DynamicCheckBox(self, self.project, "preview", self.styles, label="preview:")
+        chkPreview.Bind(wx.EVT_CHECKBOX, self.onPreviewCheckboxChanged)
+        imgPreview = dynctrl.DynamicBitmap(self, self.project, "previewImage", self.styles, size=(150,150))
+        imgPreview.SetScaleMode(wx.StaticBitmap.Scale_Fill)
         self.btnGenerate = wx.Button(self, label=_("Generate"), size=(pw, 18))
         btnReset = wx.Button(self, label=_("Reset"), size=(pw, 18))
         self.progressBar = progress.ProgressIndicator(self, size=(pw,5))
@@ -141,7 +144,8 @@ class ProjectPropertiesPanel(wx.Panel):
             btnRandomCxy.Bind(wx.EVT_BUTTON, self.onRandomCxy)
             gridsizer4.Add(btnRandomCxy, 1)
         gridsizer4.Add(btnReset, 1)
-        gridsizer4.Add(self.chkBoxPreview, 1)
+        gridsizer4.Add(chkPreview, 1)
+        gridsizer4.Add(imgPreview, 1)
         gridsizer4.Add(self.btnGenerate, 1)
         gridsizer4.Add(self.progressBar, 1)
         self.btnGenerate.Bind(wx.EVT_BUTTON, self.onGenerate)
@@ -161,6 +165,12 @@ class ProjectPropertiesPanel(wx.Panel):
         self.cleanUp()
         self.construct(prj)
         self.Refresh()
+
+    def onPreviewCheckboxChanged(self, e):
+        obj = e.GetEventObject()
+        if obj.IsChecked():
+            StartCoroutine(self.controller.startPreview, self)
+        e.Skip()
 
     def onProgress(self, generator, p):
         self.progressBar.SetValue(p)
@@ -187,7 +197,7 @@ class ProjectPropertiesPanel(wx.Panel):
         self.project.setCxy((random.random() * 2.0 - 1.0, random.random() - 0.5))
 
     async def generate(self):
-        await self.controller.generate(self.onProgress, self.chkBoxPreview.GetValue(), area=self.selectedArea)
+        await self.controller.generate(self.onProgress, area=self.selectedArea)
 
 
 class ResultPanel(wx.Panel):

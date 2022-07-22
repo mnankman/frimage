@@ -125,7 +125,7 @@ class JuliaGenerator(FractalGenerator):
                 self.plotValues[x,y] = i
             if progressHandler!=None and y % 10 == 0:
                 progressHandler(self, int(100*y/h))
-        progressHandler(self, 100)
+        if progressHandler!=None: progressHandler(self, 100)
 
     def getImage(self):
         self.pixels = self.source.getGradientPixels(self.maxIt, self.reverseColors)
@@ -175,7 +175,7 @@ class MandelbrotGenerator(FractalGenerator):
                 self.plotValues[x,y] = i
             if progressHandler!=None and y % 10 == 0:
                 progressHandler(self, int(100*y/h))
-        progressHandler(self, 100)
+        if progressHandler!=None: progressHandler(self, 100)
 
     def getImage(self):
         self.pixels = self.source.getGradientPixels(self.maxIt, self.reverseColors)

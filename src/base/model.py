@@ -1,6 +1,3 @@
-from operator import ge
-from tempfile import NamedTemporaryFile
-
 from numpy import deprecate_with_doc
 from lib import log, util
 from lib.pubsub import Publisher
@@ -237,6 +234,8 @@ class Project(ModelObject):
         self.generatedImage = None
         self.path = None
         self.progress = 0
+        self.__preview__ = False
+        self.previewImage = None
         self.persist("name")
         self.persist("artist")
         self.persist("width")
@@ -310,8 +309,20 @@ class Project(ModelObject):
     def getPath(self):
         return self.path
 
-    def generate(self):
-        pass
+    def getPreview(self):
+        return self.__preview__
+
+    def setPreview(self, v):
+        if v!=self.__preview__:
+            self.__preview__ = v
+            self.setModified()
+
+    def getPreviewImage(self):
+        return self.previewImage
+
+    def setPreviewImage(self, im):
+        self.previewImage = im
+        self.setModified()
 
     def getProgress(self):
         return self.progress
@@ -324,25 +335,54 @@ class Project(ModelObject):
         log.debug(function=self.onProgress, args=p)
         self.setProgress(p)
 
-    async def generate(self, generator, progressHandler=None, preview=False, **setup):
-        log.debug(function=self.generate, args=(generator, preview, setup))
-        if preview:
-            w,h = setup["size"]
-            setup["size"] = (int(w/10), int(h/10))
+    def up(self):
+        pass
+
+    def generate(self):
+        pass
+
+    def getPreviewSize(self):
+        w,h = self.getSize()
+        l = w if w>h else h
+        d=0.1
+        while l*d>100: d=d*0.1
+        return (int(w*d), int(h*d))
+
+    def prePreview(self, generator, **setup):
         generator.setup(**setup)
-        h = self.onProgress if progressHandler==None else progressHandler
-        self.setProgress(0)
-        await generator.generate(progressHandler=h)
+
+    async def preview(self, **setup):
+        log.debug(function=self.preview, args=(setup))
+        generator = self.getGenerator()
+        if generator:
+            self.prePreview(generator, **setup)
+            generator.setup(size=self.getPreviewSize())
+            await generator.generate()
+            self.setPreviewImage(generator.getImage())
+
+    def getGenerator(self):
+        return None
+
+    def preGenerate(self, generator, **setup):
+        generator.setup(**setup)
+
+    def postGenerate(self, generator):
         b = self.getBorderSize()
         p = self.getBorderColourPick()        
         pixels = self.getProjectSource().getGradientPixels(generator.maxIt)
         fractalBox = ImageBox(ImageBox.ORIENTATION_HORIZONTAL, b, b, pixels[p])
         fractalBox.addImage(generator.getImage())
         self.setGeneratedImage(fractalBox.getImage())
-        log.trace("generation complete")
 
-    def up(self):
-        pass
+    async def generate(self, progressHandler=None, **setup):
+        log.debug(function=self.generate, args=(setup))
+        generator = self.getGenerator()
+        if generator:
+            self.preGenerate(generator, **setup)
+            self.setProgress(0)
+            await generator.generate(progressHandler=self.onProgress if progressHandler==None else progressHandler)
+            self.postGenerate(generator)
+            log.trace("generation complete")
 
     def setGeneratedImage(self, im):
         self.generatedImage = im
@@ -505,26 +545,32 @@ class MandelbrotProject(Project):
             self.generator.source = self.getProjectSource().getSource()
             self.setGeneratedImage(self.generator.getImage())
 
-    async def generate(self, progressHandler=None, preview=False, **kw):
-        log.debug(function=self.generate, args=kw)
-        self.generator = img.imgengine.MandelbrotGenerator(self.getProjectSource().getSource())
-        if kw!=None and "area" in kw.keys():
-            areaRect = kw["area"]
+    def getGenerator(self):
+        return img.imgengine.MandelbrotGenerator(self.getProjectSource().getSource())
+
+    def preGenerate(self, generator, **setup):
+        log.debug(function=self.preGenerate, args=setup)
+        if setup!=None and "area" in setup.keys():
+            areaRect = setup["area"]
         else:
             areaRect = self.currentSet.getArea().getRect()
         if areaRect!=None and self.currentSet.getGeneratedImage()!=None:
             genSet = self.currentSet.addGeneratedSet()
             genSet.getArea().setRect(areaRect)
             self.currentSet = genSet
-        await super().generate(
-            self.generator, 
-            progressHandler,
-            preview,
+        generator.setup(
             size=self.getSize(), 
             reverseColors=self.getProjectSource().getFlipGradient(), 
             area=self.currentSet.getArea().getAll()
         )
 
+    def prePreview(self, generator, **setup):
+        log.debug(function=self.prePreview, args=generator)
+        generator.setup(
+            reverseColors=self.getProjectSource().getFlipGradient(), 
+            area=self.currentSet.getArea().getAll()
+        )
+    
     def saveImages(self, storage):
         self.getProjectSource().saveSourceImage(storage)
         self.getRootSet().saveImages(storage)
@@ -629,11 +675,13 @@ class JuliaProject(Project):
             self.generator.source = self.getProjectSource().getSource()
             self.setGeneratedImage(self.generator.getImage())
 
-    async def generate(self, progressHandler=None, preview=False, **kw):
-        log.debug(function=self.generate, args=kw)
-        self.generator = img.imgengine.JuliaGenerator(self.getProjectSource().getSource())
-        if kw!=None and "area" in kw.keys():
-            areaRect = kw["area"]
+    def getGenerator(self):
+        return img.imgengine.JuliaGenerator(self.getProjectSource().getSource())
+
+    def preGenerate(self, generator, **setup):
+        log.debug(function=self.preGenerate, args=setup)
+        if setup!=None and "area" in setup.keys():
+            areaRect = setup["area"]
         else:
             areaRect = self.currentSet.getArea().getRect()
         cxy = self.currentSet.getCxy().getCxy()
@@ -642,16 +690,21 @@ class JuliaProject(Project):
             genSet.getArea().setRect(areaRect)
             genSet.getCxy().setCxy(cxy)
             self.currentSet = genSet
-        await super().generate(
-            self.generator, 
-            progressHandler,
-            preview,
+        generator.setup(
             size=self.getSize(), 
             reverseColors=self.getProjectSource().getFlipGradient(), 
             area=self.currentSet.getArea().getAll(),
             cxy=self.currentSet.getCxy().getCxy()
         )
-
+    
+    def prePreview(self, generator, **setup):
+        log.debug(function=self.prePreview, args=generator)
+        generator.setup(
+            reverseColors=self.getProjectSource().getFlipGradient(), 
+            area=self.currentSet.getArea().getAll(),
+            cxy=self.currentSet.getCxy().getCxy()
+        )
+    
     def saveImages(self, storage):
         self.getProjectSource().saveSourceImage(storage)
         self.getRootSet().saveImages(storage)
@@ -748,8 +801,11 @@ class Model(AbstractModel, Publisher):
     def setAttribute(self, attrName, attrValue):
         self.currentProject.setAttribute(attrName, attrValue)
 
-    async def generate(self, progressHandler=None, preview=False, **kw):
-        await self.getCurrentProject().generate(progressHandler, preview, **kw)
+    async def preview(self, **kw):
+        await self.getCurrentProject().preview(**kw)
+
+    async def generate(self, progressHandler=None, **kw):
+        await self.getCurrentProject().generate(progressHandler, **kw)
         self.dispatch("msg_generate_complete", {"generated": self.currentProject.getGeneratedImage()})
 
     def getGeneratedImage(self):
