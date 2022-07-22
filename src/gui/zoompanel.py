@@ -21,6 +21,7 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         self.__mode__ = MODE_ZOOM
         self.__areaRect__ = self.modelObject.getArea().getRect()
         self.__scaleFactor__ = 2
+        self.__scaleToFit__ = False
         self.__zoomRect__ = None
         self.__imgFitSize__ = None
         self.__mouseOver__ = False
@@ -48,10 +49,29 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
             self.__pilImage__ = Image.new("RGB", self.modelObject.getSize())  
         else:
             self.__pilImage__ = Image.new("RGB", self.GetSize())
+        self.SetSize(self.__pilImage__.size)
         self.Refresh()
 
     def getImage(self):
         return self.__pilImage__
+
+    def getScaleToFit(self):
+        return self.__scaleToFit__
+
+    def setScaleToFit(self, v):
+        self.__scaleToFit__ = v
+        self.Refresh()
+
+    def getImageFitSize(self):
+        return self.__pilImage__.size if not self.__scaleToFit__ else self.__imgFitSize__
+
+    def getImageFitPos(self):
+        return (0,0)
+        
+    def getImageFitRect(self):
+        ix,iy = self.getImageFitPos()
+        iw,ih = self.getImageFitSize()
+        return (ix,iy,iw,ih)
 
     def getArea(self):
         assert isinstance(self.modelObject, base.model.Project)
@@ -166,7 +186,7 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
     def clientRectToAreaRect(self, clientRect):
         ax,ay,aw,ah = self.__areaRect__
         zrx,zry,zrw,zrh = clientRect
-        iw,ih = self.__imgFitSize__
+        iw,ih = self.getImageFitSize()
         sx = zrx/iw
         sy = zry/ih
         sw = aw*self.getZoomScale()
@@ -180,7 +200,7 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         ax1,ay1,aw1,ah1 = self.__areaRect__ # current area rect
         ax2,ay2,aw2,ah2 = areaRect
         scale = ah2/ah1
-        iw,ih = self.__imgFitSize__
+        iw,ih = self.getImageFitSize()
         rw=iw*scale
         rh=ih*scale
         rx=iw*(ax2-ax1)/aw1
@@ -204,8 +224,9 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         im = self.getImage()
         self.__imgFitSize__ = self.calcImageFitSize(im, self.GetSize())
         dc = wx.PaintDC(self)
-        imr = im.resize(self.__imgFitSize__)
-        dc.DrawBitmap(self.pilImageToBitmap(imr), 0, 0)
+        imr = im.resize(self.__imgFitSize__) if self.__scaleToFit__ else im.copy()
+        ix,iy = self.getImageFitPos()
+        dc.DrawBitmap(self.pilImageToBitmap(imr), ix, iy)
         self.drawImageSizeTxt(dc)
         self.drawGenerationSetAreas(dc)
         self.drawSourceImageStamp(dc)
@@ -220,19 +241,19 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
     def drawImageSizeTxt(self, dc):
         dc.SetPen(wx.Pen("#ffffff"))
         dc.SetBrush(wx.Brush("#0000FF", style=wx.BRUSHSTYLE_SOLID))
-        iw,ih = self.__imgFitSize__
-        txt = str(self.__imgFitSize__)
+        ix,iy,iw,ih = self.getImageFitRect()
+        txt = str(self.getImageFitSize())
         tw,th = dc.GetTextExtent(txt)
-        dc.DrawText(txt, iw-tw, ih-th)
+        dc.DrawText(txt, ix+iw-tw, iy+ih-th)
 
     def drawZoomRectTxt(self, dc):
         dc.SetPen(wx.Pen("#ffffff"))
         dc.SetBrush(wx.Brush("#0000FF", style=wx.BRUSHSTYLE_SOLID))
-        iw,ih = self.__imgFitSize__
+        ix,iy,iw,ih = self.getImageFitRect()
         rx,ry,rw,rh = self.__zoomRect__
         txt = str((int(rx),int(ry),int(rx+rw),int(ry+rh)))
         tw,th = dc.GetTextExtent(txt)
-        dc.DrawText(txt, 0, ih-th)
+        dc.DrawText(txt, ix, iy+ih-th)
 
     def drawZoomRect(self, dc):
         dc.SetPen(wx.Pen("#ffffff"))

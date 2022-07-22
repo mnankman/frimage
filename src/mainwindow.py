@@ -34,6 +34,7 @@ ID_PROJECT_SELECT_FINISH_MODE=305
 ID_PROJECT_HISTORY_NEXT=306
 ID_PROJECT_HISTORY_PREVIOUS=307
 ID_PROJECT_HISTORY_UP=308
+ID_PROJECT_FIT_IMAGE=309
 
 ID_DEBUG_SHOWINSPECTIONTOOL=601
 
@@ -89,6 +90,7 @@ class MainWindow(wx.Frame):
         self.Bind(event=wx.EVT_MENU, handler=self.onUserSelectZoomMode, id=ID_PROJECT_SELECT_ZOOM_MODE)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserSelectFinishMode, id=ID_PROJECT_SELECT_FINISH_MODE)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserProjectHistoryUp, id=ID_PROJECT_HISTORY_UP)
+        self.Bind(event=wx.EVT_MENU, handler=self.onUserProjectFitImage, id=ID_PROJECT_FIT_IMAGE)
 
         #wx.PostEvent(self, wx.MenuEvent(wx.wxEVT_MENU, ID_FILE_NEW_PROJECT_MANDELBROTPROJECT))
 
@@ -103,6 +105,7 @@ class MainWindow(wx.Frame):
         bmpSelectZoomMode = wx.Image(RESOURCES+"/picture_in_picture.png").ConvertToBitmap()
         bmpSelectFinishMode = wx.Image(RESOURCES+"/image.png").ConvertToBitmap()
         bmpUp = wx.Image(RESOURCES+"/north_west.png").ConvertToBitmap()
+        bmpFit = wx.Image(RESOURCES+"/aspect_ratio.png").ConvertToBitmap()
 
         toolbar.AddTool(ID_FILE_OPEN_PROJECT, "Open project", bmpOpen, wx.NullBitmap, wx.ITEM_NORMAL, "Open project", "Open project", None)
         toolbar.AddTool(ID_FILE_SAVE_PROJECT, "Save project", bmpSave, wx.NullBitmap, wx.ITEM_NORMAL, "Save project", "Save project", None)
@@ -110,6 +113,7 @@ class MainWindow(wx.Frame):
         toolbar.AddTool(ID_PROJECT_SELECT_SOURCEIMAGE, "Select image...", bmpSelectImage, wx.NullBitmap, wx.ITEM_NORMAL, "Select image", "Select image", None)
         toolbar.AddTool(ID_PROJECT_GENERATE, "Generate", bmpGenerate, wx.NullBitmap, wx.ITEM_NORMAL, "Generate", "Generate", None)
         toolbar.AddTool(ID_PROJECT_RESET, "Reset", bmpReset, wx.NullBitmap, wx.ITEM_NORMAL, "Reset", "Reset", None)
+        toolbar.AddTool(ID_PROJECT_FIT_IMAGE, "Fit image to frame size", bmpFit, wx.NullBitmap, wx.ITEM_NORMAL, "Fit image to frame size", "Fit image to frame size", None)
         toolbar.AddSeparator()
         toolbar.AddTool(ID_PROJECT_SELECT_ZOOM_MODE, "Zoom mode", bmpSelectZoomMode, wx.NullBitmap, wx.ITEM_NORMAL, "Switch to zoom mode", "Switch to zoom mode", None)
         toolbar.AddTool(ID_PROJECT_SELECT_FINISH_MODE, "Zoom mode", bmpSelectFinishMode, wx.NullBitmap, wx.ITEM_NORMAL, "Switch to finish mode", "Switch to finish mode", None)
@@ -214,6 +218,10 @@ class MainWindow(wx.Frame):
     def onUserProjectHistoryUp(self, e):
         log.debug(function=self.onUserProjectHistoryUp)
         self.controller.getCurrentProject().up()
+        e.Skip()
+
+    def onUserProjectFitImage(self, e):
+        self.ResultPnl.toggleFitImage()
         e.Skip()
 
     def onUserShowInspectionTool(self, e):

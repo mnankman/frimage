@@ -193,7 +193,8 @@ class ResultPanel(wx.Panel):
         self.project = project
 
         sizer.Clear()
-        self.imZmPnl = zoompanel.ZoomPanel(self, self.project, "generatedImage", self.styles, size=self.GetSize())
+        #self.imZmPnl = zoompanel.ZoomPanel(self, self.project, "generatedImage", self.styles, size=self.GetSize())
+        self.imZmPnl = zoompanel.ZoomPanel(self, self.project, "generatedImage", self.styles)
         self.imZmPnl.Bind(zoompanel.EVT_ZOOM_AREA, self.onAreaZoom)
         sizer.Add(self.imZmPnl, 1)
         sizer.Layout()
@@ -228,6 +229,9 @@ class ResultPanel(wx.Panel):
 
     def setFinishMode(self):
         self.imZmPnl.setMode(zoompanel.MODE_FINISH)
+
+    def toggleFitImage(self):
+        self.imZmPnl.setScaleToFit(not self.imZmPnl.getScaleToFit())
 
     def showNextStep(self):
         self.imZmPnl.showNextStep()
