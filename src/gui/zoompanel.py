@@ -1,11 +1,12 @@
 import wx
+import wx.lib.newevent as NE
 import base.model
 from PIL import Image, ImageDraw
 from lib import log
 import gui.dynctrl as dynctrl
 from img.imgbox import ImageBox
 
-ZoomAreaEvent, EVT_ZOOM_AREA = wx.lib.newevent.NewEvent()
+ZoomAreaEvent, EVT_ZOOM_AREA = NE.NewEvent()
 
 ZOOM_FACTOR_VALUES = [0.05, 0.1, 0.2, 0.25, 0.5, 0.8]
 
