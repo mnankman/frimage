@@ -1,4 +1,5 @@
 import asyncio
+from platform import platform
 import wx
 from wxasync import WxAsyncApp
 from wx.lib.inspection import InspectionTool
@@ -221,11 +222,24 @@ class MainWindow(wx.Frame):
 
 import logging
 
+import PIL._version as pilversion
+import numpy as np
+import platform
+def versions():
+    print("Platform and lbirary versions:")
+    print("Python version", platform.python_version())
+    print("wx version", wx.version())
+    print("PIL version", pilversion.__version__)
+    print("Numpy version", np.__version__)
+
+
 def start():
     # configure logging
     logging.basicConfig(format='[%(name)s] %(levelname)s:%(message)s', level=logging.DEBUG)
     log.setLoggerLevel("lib.persistentobject", logging.ERROR)
     log.setLoggerLevel("lib.modelobject", logging.ERROR)
+
+    versions()
        
     # construct the asynchronous app and run it in the main async event loop
     app = WxAsyncApp()
