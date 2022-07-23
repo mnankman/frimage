@@ -15,18 +15,32 @@ def pixel(i, width=100, map=[], spread=2):
     b = sum([gaussian(i, p[1][2], p[0] * width, width/(spread*len(map))) for p in map])
     return min(1.0, r), min(1.0, g), min(1.0, b)
 
+def get_gradient_2d(start, stop, width, height, is_horizontal):
+    if is_horizontal:
+        return np.tile(np.linspace(start, stop, width), (height, 1))
+    else:
+        return np.tile(np.linspace(start, stop, height), (width, 1)).T
+
+def get_gradient_3d(width, height, start_list, stop_list, is_horizontal_list):
+    result = np.zeros((height, width, len(start_list)), dtype=np.float)
+    for i, (start, stop, is_horizontal) in enumerate(zip(start_list, stop_list, is_horizontal_list)):
+        result[:, :, i] = get_gradient_2d(start, stop, width, height, is_horizontal)
+    return result
+
+def default_image(w=150, h=150):
+    array = get_gradient_3d(w, h, (0, 0, 192), (255, 255, 64), (True, False, False))
+    return Image.fromarray(np.uint8(array))
+
 class Source:
-    def __init__(self, sourceImagePath, heatmapBaseImageSize=(10,10)):
+    def __init__(self, im=None, heatmapBaseImageSize=(10,10)):
         self.heatmap = []
-        self.sourceImagePath = sourceImagePath
-        im = Image.open(self.sourceImagePath)
-        self.sourceImage = im.convert('RGB')
+        self.__sourceImage__ = im if im else default_image()
         self.init(heatmapBaseImageSize)
 
     def init(self, heatmapBaseImageSize=(10,10)):
-        sw,sh = self.sourceImage.size
+        sw,sh = self.__sourceImage__.size
         mw,mh = heatmapBaseImageSize
-        self.heatmapBaseImage = self.sourceImage.resize((sw if sw<mw else mw, sh if sh<mh else mh))
+        self.heatmapBaseImage = self.__sourceImage__.resize((sw if sw<mw else mw, sh if sh<mh else mh))
         self.heatmap = []
         color_count = {}
         img = self.heatmapBaseImage
@@ -54,7 +68,7 @@ class Source:
         self.createGradientImage()
 
     def createGradientImage(self):
-        w,h = self.sourceImage.size
+        w,h = self.__sourceImage__.size
         im = Image.new('RGB', (w,1))
         ld = im.load()
         for x in range(w):
@@ -72,7 +86,7 @@ class Source:
         return pixels
 
     def getSourceImage(self):
-        return self.sourceImage
+        return self.__sourceImage__
 
     def getGradientImage(self):
         return self.gradientImage
@@ -96,10 +110,7 @@ class FractalGenerator:
         pass
         
     async def generate(self, progressHandler=None):
-        self.plot(progressHandler=progressHandler)
-
-    def getImage(self): 
-        return None
+        self.plotValues, self.maxValue = self.plot(progressHandler=progressHandler)
 
 class JuliaGenerator(FractalGenerator):
     def __init__(self, source, size=(512,512), reverseColors=False, area=(-2.0,1.0,-1.5,1.5), cxy=None, maxIt=256):
@@ -112,8 +123,9 @@ class JuliaGenerator(FractalGenerator):
         cx, cy = self.cxy if self.cxy!=None else (random.random() * 2.0 - 1.0, random.random() - 0.5)
         c = complex(cx, cy)
         w,h = self.size
-        self.plotValues = np.empty(self.size)
+        plotValues = np.empty(self.size)
         xa,xb,ya,yb = self.area  # drawing area (xa < xb and ya < yb)
+        i_max = 0
         for y in range(h):
             zy = y * (yb - ya) / (h - 1) + ya
             for x in range(w):
@@ -122,36 +134,13 @@ class JuliaGenerator(FractalGenerator):
                 for i in range(self.maxIt):
                     if abs(z) > 2.0: break 
                     z = z * z + c 
-                self.plotValues[x,y] = i
+                plotValues[x,y] = i
+                i_max = i if i>i_max else i_max
             if progressHandler!=None and y % 10 == 0:
                 progressHandler(self, int(100*y/h))
         if progressHandler!=None: progressHandler(self, 100)
+        return (plotValues, i_max)
 
-    def getImage(self):
-        self.pixels = self.source.getGradientPixels(self.maxIt, self.reverseColors)
-        if self.plotValues.any():
-            image = Image.new("RGB", self.size)
-            ld = image.load()
-            w,h = self.size
-            for y in range(h):
-                for x in range(w):
-                    ld[x,y] = self.pixels[int(self.plotValues[x,y])]
-            return image
-        else:
-            return None
- 
-    def getFancyImage(self):
-        sourceBox = ImageBox(ImageBox.ORIENTATION_HORIZONTAL, 2, 2, self.pixels[255])
-        sourceBox.addImage(self.source.getSourceImage())
-        
-        fractalBox = ImageBox(ImageBox.ORIENTATION_HORIZONTAL, 1, 1, self.pixels[255])
-        fractalBox.addImage(self.image)
-
-        im = fractalBox.getImage()
-        w,h = im.size
-        sw,sh=sourceBox.getImage().size
-        im.paste(sourceBox.getImage(), (10,h-sh-10))
-        return im
 
 class MandelbrotGenerator(FractalGenerator):
     def __init__(self, source, size=(512,512), reverseColors=False, area=(-2.0,1.0,-1.5,1.5), maxIt=256):
@@ -161,8 +150,9 @@ class MandelbrotGenerator(FractalGenerator):
 
     def plot(self, progressHandler=None):
         w,h = self.size
-        self.plotValues = np.empty(self.size)
+        plotValues = np.empty(self.size)
         xa,xb,ya,yb = self.area  # drawing area (xa < xb and ya < yb)
+        i_max = 0
         for y in range(h):
             cy = y * (yb - ya) / (h - 1)  + ya
             for x in range(w):
@@ -172,36 +162,12 @@ class MandelbrotGenerator(FractalGenerator):
                 for i in range(self.maxIt):
                     if abs(z) > 2.0: break 
                     z = z * z + c 
-                self.plotValues[x,y] = i
+                plotValues[x,y] = i
+                i_max = i if i>i_max else i_max
             if progressHandler!=None and y % 10 == 0:
                 progressHandler(self, int(100*y/h))
         if progressHandler!=None: progressHandler(self, 100)
-
-    def getImage(self):
-        self.pixels = self.source.getGradientPixels(self.maxIt, self.reverseColors)
-        if self.plotValues.any():
-            image = Image.new("RGB", self.size)
-            ld = image.load()
-            w,h = self.size
-            for y in range(h):
-                for x in range(w):
-                    ld[x,y] = self.pixels[int(self.plotValues[x,y])]
-            return image
-        else:
-            return None
-
-    def getFancyImage(self):
-        sourceBox = ImageBox(ImageBox.ORIENTATION_HORIZONTAL, 2, 2, self.pixels[255])
-        sourceBox.addImage(self.source.getSourceImage())
-
-        fractalBox = ImageBox(ImageBox.ORIENTATION_HORIZONTAL, 2, 2, self.pixels[255])
-        fractalBox.addImage(self.image)
-
-        im = fractalBox.getImage()
-        w,h = im.size
-        sw,sh=sourceBox.getImage().size
-        im.paste(sourceBox.getImage(), (5,5))
-        return im
+        return (plotValues, i_max)
 
 from decimal import Decimal
 class SmoothMandelbrotGenerator(FractalGenerator):

@@ -118,6 +118,8 @@ class ModelObject(PersistentObject, Publisher):
         getterName = "get"+util.upperFirst(attr)
         assert hasattr(type(self), getterName)
         get = getattr(type(self), getterName)
+        log.debug(function=self.getAttribute, args=attr)
+        log.debug(function=get)
         return get(self)
 
     def hasAttribute(self, attr):

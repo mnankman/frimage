@@ -22,21 +22,21 @@ class ProjectSource(ModelObject):
         self.persist("heatmapBaseImageWidth", 10)
         self.persist("heatmapBaseImageHeight", 10)
         self.persist("flipGradient", False)
+        self.setSource(img.imgengine.Source(None, self.getHeatmapBaseImageSize()))
 
     def getPath(self):
         return self.__path
     
     def setPath(self, path):
         self.__path = path
-        self.setSource(img.imgengine.Source(path, self.getHeatmapBaseImageSize()))
-        self.setModified()
+        im = Image.open(self.__path)
+        self.setSource(img.imgengine.Source(im.convert('RGB'), self.getHeatmapBaseImageSize()))
 
     def setSource(self, source):
         self.__source = source
         self.setSourceImage(source.getSourceImage())
         self.setHeatmapBaseImage(source.getHeatmapBaseImage())
         self.setGradientImage(source.getGradientImage())
-        self.setModified()
 
     def setSourceImage(self, im):
         self.__sourceImage = im
@@ -231,7 +231,9 @@ class Project(ModelObject):
         self.__borderSize = 0
         self.__borderColourPick = 255
         self.projectSource = ProjectSource(self)
-        self.generatedImage = None
+        self.plotValues = None
+        self.maxPlotValue = None
+        self.__generatedImage = None
         self.path = None
         self.progress = 0
         self.__preview__ = False
@@ -338,6 +340,19 @@ class Project(ModelObject):
     def up(self):
         pass
 
+    def __getImage(self, size):
+        if self.maxPlotValue and self.plotValues.any():
+            self.pixels = self.getProjectSource().getGradientPixels(self.maxPlotValue+1)
+            image = Image.new("RGB", size)
+            ld = image.load()
+            w,h = size
+            for y in range(h):
+                for x in range(w):
+                    ld[x,y] = self.pixels[int(self.plotValues[x,y])]
+            return image
+        else:
+            return None
+
     def generate(self):
         pass
 
@@ -358,7 +373,9 @@ class Project(ModelObject):
             self.prePreview(generator, **setup)
             generator.setup(size=self.getPreviewSize())
             await generator.generate()
-            self.setPreviewImage(generator.getImage())
+            self.plotValues = generator.plotValues
+            self.maxPlotValue = generator.maxValue
+            self.setPreviewImage(self.__getImage(self.getPreviewSize()))
 
     def getGenerator(self):
         return None
@@ -369,9 +386,9 @@ class Project(ModelObject):
     def postGenerate(self, generator):
         b = self.getBorderSize()
         p = self.getBorderColourPick()        
-        pixels = self.getProjectSource().getGradientPixels(generator.maxIt)
+        pixels = self.getProjectSource().getGradientPixels(self.maxPlotValue+1)
         fractalBox = ImageBox(ImageBox.ORIENTATION_HORIZONTAL, b, b, pixels[p])
-        fractalBox.addImage(generator.getImage())
+        fractalBox.addImage(self.__getImage(self.getSize()))
         self.setGeneratedImage(fractalBox.getImage())
 
     async def generate(self, progressHandler=None, **setup):
@@ -381,11 +398,13 @@ class Project(ModelObject):
             self.preGenerate(generator, **setup)
             self.setProgress(0)
             await generator.generate(progressHandler=self.onProgress if progressHandler==None else progressHandler)
+            self.plotValues = generator.plotValues
+            self.maxPlotValue = generator.maxValue
             self.postGenerate(generator)
             log.trace("generation complete")
 
     def setGeneratedImage(self, im):
-        self.generatedImage = im
+        self.__generatedImage = im
         self.setModified()
 
     def getGeneratedImage(self):
