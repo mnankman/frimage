@@ -40,6 +40,7 @@ class ProjectGalleryFrame(wx.Frame):
 
         self.Fit()
         self.SetAutoLayout(True)
+        self.Bind(event=wx.EVT_CLOSE, handler=self.onUserCloseWindow)
 
     def applyStyles(self, obj):
         obj.SetBackgroundColour(self.styles["BackgroundColour"])
@@ -146,4 +147,7 @@ class ProjectGalleryFrame(wx.Frame):
     def onOpen(self, e):
         log.debug(function=self.onOpen, args=e.GetEventObject().GetName())
         self.controller.openProject(self.storage.name)
+        self.Hide()
+
+    def onUserCloseWindow(self, e):
         self.Hide()

@@ -44,12 +44,13 @@ class ProjectStorage:
         self.path = os.curdir + os.sep + self.rootPath + os.sep + self.name
 
     def getNextName(self, name):
+        nrStr=""
         path = os.curdir + os.sep + self.rootPath + os.sep + name
         i=0
-        while os.path.exists(path): 
+        while os.path.exists(path+nrStr): 
             i+=1
-            path += "_"+str(i)
-        return name if i==0 else name + "_" + str(i)
+            nrStr = "_"+str(i)
+        return name + nrStr
 
     def create(self):
         makeDirs(self.getPath())

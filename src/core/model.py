@@ -5,6 +5,7 @@ from lib.modelobject import ModelObject
 import core.fgen
 from lib.imgbox import ImageBox
 from PIL import Image
+import numpy as np
 import json
 
 class Application(ModelObject):
@@ -443,18 +444,20 @@ class GeneratedSet(ModelObject):
     def __init__(self, parent, name):
         super().__init__(parent)
         self.area = Area(self)
-        self.__name__ = name
+        self.__name = name
         self.__generatedPlot__ = None
-        self.__maxPlotValue__ = None
+        self.__maxPlotValue = None
         self.__cachedImage__ = None
         self.__generatedSets__ = []
         self.persist("name")
+        self.persist("maxPlotValue")
 
     def setName(self, name):
-        self.__name__ = name
+        self.__name = name
+        self.setModified()
 
     def getName(self):
-        return self.__name__
+        return self.__name
 
     def getArea(self):
         return self.area
@@ -470,18 +473,29 @@ class GeneratedSet(ModelObject):
         self.__cachedImage__ = im
 
     def getGeneratedPlot(self):
+        try:
+            if self.__generatedPlot__.any() == None: return None
+        except AttributeError as ae:
+            log.error(ae, function=self.getGeneratedPlot)
+            return None
+        except ValueError:
+            return None
         return self.__generatedPlot__
 
     def setGeneratedPlot(self, plot):
+        log.debug(function=self.setGeneratedPlot, args=plot)
         self.__generatedPlot__ = plot
         self.setModified()
 
     def getMaxPlotValue(self):
-        return self.__maxPlotValue__
+        return self.__maxPlotValue
 
     def setMaxPlotValue(self, v):
-        self.__maxPlotValue__ = v
+        self.__maxPlotValue = v
         self.setModified()
+
+    def hasGeneratedPlot(self):
+        return self.__maxPlotValue!=None
 
     def addGeneratedSet(self):
         newSet = self.newGeneratedSet()
@@ -509,7 +523,14 @@ class GeneratedSet(ModelObject):
             depth = sd if sd>depth else depth
         return depth
 
+    def savePlot(self, storage):
+        im = Image.fromarray(self.getGeneratedPlot()).convert("RGB")
+        imgPath = storage.toPath(self.getName()+"_plot.png", False)
+        im.save(imgPath)
+        log.debug("saved plot to ", imgPath, function=self.savePlot)
+
     def saveImages(self, storage):
+        self.savePlot(storage)
         im = self.getCachedImage()
         if im != None:
             imgPath = storage.toPath(self.getName()+".png", False)
@@ -518,9 +539,32 @@ class GeneratedSet(ModelObject):
         for gs in self.getGeneratedSets():
             gs.saveImages(storage)
 
+    def loadPlot(self, storage):
+        imgPath = storage.toPath(self.getName()+"_plot.png")
+        if imgPath!=None: 
+            try:
+                im = Image.open(imgPath)
+                self.setGeneratedPlot(np.array(im))
+            except OSError as oe:
+                log.error(oe, function=self.loadImages)
+            except AttributeError as ae:
+                log.error(ae, function=self.loadImages)
+            finally:
+                pass
+
     def loadImages(self, storage):
+        self.loadPlot(storage)
         imgPath = storage.toPath(self.getName()+".png")
-        if imgPath!=None: self.setCachedImage(Image.open(imgPath))
+        if imgPath!=None: 
+            try:
+                im = Image.open(imgPath)
+                self.setCachedImage(im)
+            except OSError as oe:
+                log.error(oe, function=self.loadImages)
+            except AttributeError as ae:
+                log.error(ae, function=self.loadImages)
+            finally:
+                pass
         for gs in self.getGeneratedSets():
             gs.loadImages(storage)
 
@@ -618,7 +662,7 @@ class MandelbrotProject(Project):
             areaRect = setup["area"]
         else:
             areaRect = self.currentSet.getArea().getRect()
-        if areaRect!=None and self.currentSet.getGeneratedPlot().any()!=None:
+        if areaRect!=None and self.currentSet.hasGeneratedPlot():
             genSet = self.currentSet.addGeneratedSet()
             genSet.getArea().setRect(areaRect)
             self.currentSet = genSet
@@ -763,7 +807,7 @@ class JuliaProject(Project):
         else:
             areaRect = self.currentSet.getArea().getRect()
         cxy = self.currentSet.getCxy().getCxy()
-        if areaRect!=None and self.currentSet.getGeneratedPlot().any()!=None:
+        if areaRect!=None and self.currentSet.hasGeneratedPlot():
             genSet = self.currentSet.addGeneratedJuliaSet()
             genSet.getArea().setRect(areaRect)
             genSet.getCxy().setCxy(cxy)
