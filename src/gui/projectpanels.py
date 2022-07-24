@@ -4,7 +4,7 @@ import wx.lib.progressindicator as progress
 
 from lib import log
 
-import base.model as model
+import core.model as model
 import gui.dynctrl as dynctrl 
 import gui.zoompanel as zoompanel
 import random

@@ -2,7 +2,7 @@ from lib.modelobject import ModelObject
 import wx
 from wx.lib.scrolledpanel import ScrolledPanel
 import gui.dynctrl as dynctrl 
-import base.filemgmt as filemgmt
+import core.filemgmt as filemgmt
 import json
 from lib import log
 

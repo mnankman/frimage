@@ -6,8 +6,8 @@ from wx.lib.inspection import InspectionTool
 
 from lib import log
 
-from base.model import JuliaProject, Model
-from base.controller import Controller
+from core.model import JuliaProject, Model
+from core.controller import Controller
 import gui.zoompanel as zoompanel
 import gui.dialogs as dlg
 import gui.projectgallery as pgallery
@@ -43,7 +43,6 @@ WINDOW_STYLES = {
     "ForegroundColour": "#FFFFFF"
 }
 
-
 class MainWindow(wx.Frame):
     def __init__(self, styles, controller):
         super().__init__(parent=None, title='Frimage Studio', size=(1200,800))
@@ -56,6 +55,7 @@ class MainWindow(wx.Frame):
 
         self.controller = controller
         self.model = self.controller.getModel()
+        self.SetTitle(self.model.getApplicationTitle())
 
         self.prjGallery = pgallery.ProjectGalleryFrame(WINDOW_STYLES, self.controller)
 

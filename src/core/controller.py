@@ -1,7 +1,7 @@
 import json
 from lib import log
-from base.model import Model, AbstractModel
-import base.filemgmt as filemgmt
+from core.model import Model, AbstractModel
+import core.filemgmt as filemgmt
 import asyncio
 
 class Controller:

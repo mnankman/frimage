@@ -1,10 +1,9 @@
 import wx
 import wx.lib.newevent as NE
-import base.model
-from PIL import Image, ImageDraw
+import core.model
+from PIL import Image
 from lib import log
 import gui.dynctrl as dynctrl
-from img.imgbox import ImageBox
 
 ZoomAreaEvent, EVT_ZOOM_AREA = NE.NewEvent()
 
@@ -45,7 +44,7 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
     def setImage(self, pilImg):
         if pilImg!=None:
             self.__pilImage__ = pilImg
-        elif isinstance(self.modelObject, base.model.Project):
+        elif isinstance(self.modelObject, core.model.Project):
             self.__pilImage__ = Image.new("RGB", self.modelObject.getSize())  
         else:
             self.__pilImage__ = Image.new("RGB", self.GetSize())
@@ -74,7 +73,7 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         return (ix,iy,iw,ih)
 
     def getArea(self):
-        assert isinstance(self.modelObject, base.model.Project)
+        assert isinstance(self.modelObject, core.model.Project)
         return self.modelObject.getArea()
         
     def setAreaRect(self, rect):
@@ -122,8 +121,8 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
 # ------- METHODS FOR HANDLING EVENTS -------
 
     def onModelObjectChange(self, payload):
-        #if "modified" in payload: return
-        log.debug(function=self.onModelObjectChange, args=payload)
+        if "modified" in payload: return
+        #log.debug(function=self.onModelObjectChange, args=payload)
         obj = payload["object"]
         pilImg = obj.getAttribute(self.attributeName)
         if pilImg != self.getImage():

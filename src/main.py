@@ -4,8 +4,8 @@ from wxasync import WxAsyncApp
 import logging
 
 from lib import log
-from base.model import Model
-from base.controller import Controller
+from core.model import Model
+from core.controller import Controller
 import gui.dialogs as dlg
 import gui.i18n
 from mainwindow import MainWindow

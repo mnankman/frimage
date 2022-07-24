@@ -4,3 +4,4 @@ from . import zoompanel
 from . import dialogs
 from . import projectgallery
 from . import projectpanels
+from . import zoompanel

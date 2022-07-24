@@ -2,10 +2,23 @@ from numpy import deprecate_with_doc
 from lib import log, util
 from lib.pubsub import Publisher
 from lib.modelobject import ModelObject
-import img.imgengine
-from img.imgbox import ImageBox
+import core.fgen
+from lib.imgbox import ImageBox
 from PIL import Image
 import json
+
+class Application(ModelObject):
+    def __init__(self):
+        super().__init__()
+        self.__name__ = "FriMage Studio"
+        self.__version__ = "0.2"
+
+    def getName(self):
+        return self.__name__
+
+    def getVersion(self):
+        return self.__version__
+
 
 class ProjectSource(ModelObject):
     def __init__(self, project, path=None):
@@ -22,7 +35,7 @@ class ProjectSource(ModelObject):
         self.persist("heatmapBaseImageWidth", 10)
         self.persist("heatmapBaseImageHeight", 10)
         self.persist("flipGradient", False)
-        self.setSource(img.imgengine.Source(None, self.getHeatmapBaseImageSize()))
+        self.setSource(core.fgen.Source(None, self.getHeatmapBaseImageSize()))
 
     def getPath(self):
         return self.__path
@@ -30,7 +43,7 @@ class ProjectSource(ModelObject):
     def setPath(self, path):
         self.__path = path
         im = Image.open(self.__path)
-        self.setSource(img.imgengine.Source(im.convert('RGB'), self.getHeatmapBaseImageSize()))
+        self.setSource(core.fgen.Source(im.convert('RGB'), self.getHeatmapBaseImageSize()))
 
     def setSource(self, source):
         self.__source = source
@@ -565,7 +578,7 @@ class MandelbrotProject(Project):
             self.setGeneratedImage(self.generator.getImage())
 
     def getGenerator(self):
-        return img.imgengine.MandelbrotGenerator(self.getProjectSource().getSource())
+        return core.fgen.MandelbrotGenerator(self.getProjectSource().getSource())
 
     def preGenerate(self, generator, **setup):
         log.debug(function=self.preGenerate, args=setup)
@@ -695,7 +708,7 @@ class JuliaProject(Project):
             self.setGeneratedImage(self.generator.getImage())
 
     def getGenerator(self):
-        return img.imgengine.JuliaGenerator(self.getProjectSource().getSource())
+        return core.fgen.JuliaGenerator(self.getProjectSource().getSource())
 
     def preGenerate(self, generator, **setup):
         log.debug(function=self.preGenerate, args=setup)
@@ -731,9 +744,14 @@ class JuliaProject(Project):
     def loadImages(self, storage):
         self.getRootSet().loadImages(storage)
 
-
 class AbstractModel():
     def __init__(self):
+        pass
+
+    def getApplication(self):
+        pass    
+
+    def getApplicationTitle(self):
         pass
     
     def newProject(self, projectType, name=None):
@@ -773,59 +791,67 @@ class Model(AbstractModel, Publisher):
     VALID_PROJECT_TYPES = [PROJECT_TYPE_JULIA, PROJECT_TYPE_MANDELBROT]
     EVENTS = ["msg_new_project", "msg_generate_complete", "msg_open_project", "msg_sourceimage_selected"]
     def __init__(self):
-        self.currentProject = None
+        self.__application__ = Application()
+        self.__currentProject__ = None
         Publisher.__init__(self, Model.EVENTS)
+
+    def getApplication(self):
+        return self.__application__
+
+    def getApplicationTitle(self):
+        title = "{} {}"
+        return title.format(self.__application__.getName(), self.__application__.getVersion())
 
     def newProject(self, projectType, name=None):
         log.trace(function=self.newProject, args=(name, projectType))
         assert projectType in Model.VALID_PROJECT_TYPES
-        if self.currentProject:
-            del self.currentProject
+        if self.__currentProject__:
+            del self.__currentProject__
         if projectType==Model.PROJECT_TYPE_JULIA: 
-            self.currentProject = JuliaProject()
+            self.__currentProject__ = JuliaProject()
         elif projectType==Model.PROJECT_TYPE_MANDELBROT: 
-            self.currentProject = MandelbrotProject()
+            self.__currentProject__ = MandelbrotProject()
         if name!=None: 
-            self.currentProject.setName(name)
-        self.dispatch("msg_new_project", {"project": self.currentProject})
-        return self.currentProject
+            self.__currentProject__.setName(name)
+        self.dispatch("msg_new_project", {"project": self.__currentProject__})
+        return self.__currentProject__
 
     def saveProperties(self, io):
-        data = json.dumps(self.currentProject.serialize(), indent=4)
+        data = json.dumps(self.__currentProject__.serialize(), indent=4)
         io.write(data)
 
     def loadProperties(self, io):
         data = json.load(io)
-        if self.currentProject:
-            del self.currentProject
+        if self.__currentProject__:
+            del self.__currentProject__
         if data["type"] == "MandelbrotProject": 
-            self.currentProject = MandelbrotProject()
+            self.__currentProject__ = MandelbrotProject()
         elif data["type"] == "JuliaProject": 
-            self.currentProject = JuliaProject()
+            self.__currentProject__ = JuliaProject()
         else:
             return
-        self.currentProject.deserialize(data)
-        self.dispatch("msg_open_project", {"project": self.currentProject})
+        self.__currentProject__.deserialize(data)
+        self.dispatch("msg_open_project", {"project": self.__currentProject__})
 
     def load(self, storage):
         storage.read("properties.json", self.loadProperties)
-        self.currentProject.loadImages(storage)
-        self.currentProject.clearModified()
+        self.getCurrentProject().loadImages(storage)
+        self.getCurrentProject().clearModified()
 
     def save(self, storage):
-        self.currentProject.saveImages(storage)
+        self.getCurrentProject().saveImages(storage)
         storage.write("properties.json", self.saveProperties)
-        self.currentProject.clearModified()
+        self.getCurrentProject().clearModified()
 
     def setAttribute(self, attrName, attrValue):
-        self.currentProject.setAttribute(attrName, attrValue)
+        self.getCurrentProject().setAttribute(attrName, attrValue)
 
     async def preview(self, **kw):
         await self.getCurrentProject().preview(**kw)
 
     async def generate(self, progressHandler=None, **kw):
         await self.getCurrentProject().generate(progressHandler, **kw)
-        self.dispatch("msg_generate_complete", {"generated": self.currentProject.getGeneratedImage()})
+        self.dispatch("msg_generate_complete", {"generated": self.getCurrentProject().getGeneratedImage()})
 
     def getGeneratedImage(self):
         return self.getCurrentProject().getGeneratedImage()
@@ -835,12 +861,12 @@ class Model(AbstractModel, Publisher):
 
     def selectProjectSourceImage(self, path):
         log.trace(function=self.selectProjectSourceImage, args=path)
-        if self.currentProject:
-            self.currentProject.setProjectSourceImage(path)
-            self.dispatch("msg_sourceimage_selected", {"source": self.currentProject.getProjectSource().getSource()})
+        if self.getCurrentProject():
+            self.getCurrentProject().setProjectSourceImage(path)
+            self.dispatch("msg_sourceimage_selected", {"source": self.getCurrentProject().getProjectSource().getSource()})
 
     def getCurrentProject(self):
-        return self.currentProject
+        return self.__currentProject__
 
     
 

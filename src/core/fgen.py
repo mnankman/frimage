@@ -1,7 +1,6 @@
 import math
-from PIL import Image, ImageDraw
+from PIL import Image
 import random
-from .imgbox import ImageBox
 import numpy as np
 from lib import log
             
