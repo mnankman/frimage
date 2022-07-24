@@ -26,6 +26,21 @@ def get_gradient_3d(width, height, start_list, stop_list, is_horizontal_list):
         result[:, :, i] = get_gradient_2d(start, stop, width, height, is_horizontal)
     return result
 
+def getImage(size, plot, gradient):
+    assert plot.any()
+    assert size
+    assert gradient
+    if plot.any() and gradient and size:
+        image = Image.new("RGB", size)
+        ld = image.load()
+        w,h = size
+        for y in range(h):
+            for x in range(w):
+                ld[x,y] = gradient[int(plot[x,y])]
+        return image
+    else:
+        return None
+
 def default_image(w=150, h=150):
     array = get_gradient_3d(w, h, (0, 0, 192), (255, 255, 64), (True, False, False))
     return Image.fromarray(np.uint8(array))
