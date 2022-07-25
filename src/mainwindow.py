@@ -17,26 +17,40 @@ import gui.i18n
 RESOURCES="resource"
 
 ID_FILE_NEW_PROJECT=101
-ID_FILE_SAVE_PROJECT=102
-ID_FILE_SAVE_PROJECT_AS=103
-ID_FILE_OPEN_PROJECT=104
-ID_FILE_SAVE_GENERATED_IMAGE=105
-ID_FILE_EXIT=199
-
 ID_FILE_NEW_PROJECT_JULIAPROJECT=121
 ID_FILE_NEW_PROJECT_MANDELBROTPROJECT=122
+ID_FILE_OPEN_PROJECT=102
+ID_FILE_SAVE_PROJECT=103
+ID_FILE_SAVE_PROJECT_AS=104
+ID_FILE_SAVE_GENERATED_IMAGE=105
+
+ID_FILE_EXIT=199
 
 ID_PROJECT_SELECT_SOURCEIMAGE=301
 ID_PROJECT_GENERATE=302
 ID_PROJECT_RESET=303
 ID_PROJECT_SELECT_ZOOM_MODE=304
 ID_PROJECT_SELECT_FINISH_MODE=305
-ID_PROJECT_HISTORY_NEXT=306
-ID_PROJECT_HISTORY_PREVIOUS=307
-ID_PROJECT_HISTORY_UP=308
-ID_PROJECT_FIT_IMAGE=309
+ID_PROJECT_HISTORY_UP=306
+ID_PROJECT_FIT_IMAGE=307
 
 ID_DEBUG_SHOWINSPECTIONTOOL=601
+
+ID_GROUP_PROJECTLOADED = []
+for i in range(ID_FILE_SAVE_PROJECT,ID_FILE_SAVE_GENERATED_IMAGE+1): ID_GROUP_PROJECTLOADED.append(i)
+for i in range(ID_PROJECT_SELECT_SOURCEIMAGE, ID_PROJECT_FIT_IMAGE+1): ID_GROUP_PROJECTLOADED.append(i)
+
+ICONS = {
+    ID_FILE_OPEN_PROJECT: RESOURCES+"/open.png",
+    ID_FILE_SAVE_PROJECT: RESOURCES+"/save.png",
+    ID_PROJECT_SELECT_SOURCEIMAGE: RESOURCES+"/add_photo.png",
+    ID_PROJECT_GENERATE: RESOURCES+"/play.png",
+    ID_PROJECT_RESET: RESOURCES+"/refresh.png",
+    ID_PROJECT_FIT_IMAGE: RESOURCES+"/aspect_ratio.png",
+    ID_PROJECT_SELECT_ZOOM_MODE: RESOURCES+"/picture_in_picture.png",
+    ID_PROJECT_SELECT_FINISH_MODE: RESOURCES+"/image.png",
+    ID_PROJECT_HISTORY_UP: RESOURCES+"/north_west.png",
+}
 
 WINDOW_STYLES = {
     "BackgroundColour": "#333333",
@@ -56,6 +70,9 @@ class MainWindow(wx.Frame):
         self.controller = controller
         self.model = self.controller.getModel()
         self.SetTitle(self.model.getApplicationTitle())
+        self.model = self.controller.getModel()
+        self.model.subscribe(self, "msg_new_project", self.onMsgNewProject)
+        self.model.subscribe(self, "msg_open_project", self.onMsgOpenProject)
 
         self.prjGallery = pgallery.ProjectGalleryFrame(WINDOW_STYLES, self.controller)
 
@@ -69,8 +86,8 @@ class MainWindow(wx.Frame):
         self.sizer.Add(self.ResultPnl, 5)
         self.SetAutoLayout(True)
 
-        self.createToolbar()
-        self.createMenu()
+        self.constructToolbar()
+        self.constructMenu()
         self.SetSizer(self.sizer)
         self.SetMinSize((600,600))
  
@@ -92,39 +109,53 @@ class MainWindow(wx.Frame):
         self.Bind(event=wx.EVT_MENU, handler=self.onUserProjectHistoryUp, id=ID_PROJECT_HISTORY_UP)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserProjectFitImage, id=ID_PROJECT_FIT_IMAGE)
 
+        for id in ID_GROUP_PROJECTLOADED:
+            self.enable(id, False)
+
         #wx.PostEvent(self, wx.MenuEvent(wx.wxEVT_MENU, ID_FILE_NEW_PROJECT_MANDELBROTPROJECT))
 
-    def createToolbar(self):
-        toolbar = self.CreateToolBar()
+    def enable(self, id, enabled):
+        try:
+            self.toolBar.EnableTool(id, enabled)
+            self.menuBar.Enable(id, enabled)
+        except AssertionError as e:
+            log.warning(e, function=self.enable, args=(id, enabled))
+            pass
+    
+    def getToolBitmap(self, id, enabled=True):
+        if id in ICONS.keys():
+            im = wx.Image(ICONS[id])
+            if enabled: 
+                return im.ConvertToBitmap()
+            else:
+                return im.ConvertToDisabled().ConvertToBitmap()
 
-        bmpOpen = wx.Image(RESOURCES+"/open.png").ConvertToBitmap()
-        bmpSave = wx.Image(RESOURCES+"/save.png").ConvertToBitmap()
-        bmpSelectImage = wx.Image(RESOURCES+"/add_photo.png").ConvertToBitmap()
-        bmpGenerate = wx.Image(RESOURCES+"/play.png").ConvertToBitmap()
-        bmpReset = wx.Image(RESOURCES+"/refresh.png").ConvertToBitmap()
-        bmpSelectZoomMode = wx.Image(RESOURCES+"/picture_in_picture.png").ConvertToBitmap()
-        bmpSelectFinishMode = wx.Image(RESOURCES+"/image.png").ConvertToBitmap()
-        bmpUp = wx.Image(RESOURCES+"/north_west.png").ConvertToBitmap()
-        bmpFit = wx.Image(RESOURCES+"/aspect_ratio.png").ConvertToBitmap()
+    def addTool(self, toolbar, id, label, shortHelp=None, longHelp=""):
+        toolbar.AddTool(id, label, self.getToolBitmap(id), self.getToolBitmap(id, False), 
+            wx.ITEM_NORMAL, shortHelp if shortHelp else label, longHelp, None)
 
-        toolbar.AddTool(ID_FILE_OPEN_PROJECT, "Open project", bmpOpen, wx.NullBitmap, wx.ITEM_NORMAL, "Open project", "Open project", None)
-        toolbar.AddTool(ID_FILE_SAVE_PROJECT, "Save project", bmpSave, wx.NullBitmap, wx.ITEM_NORMAL, "Save project", "Save project", None)
-        toolbar.AddSeparator()
-        toolbar.AddTool(ID_PROJECT_SELECT_SOURCEIMAGE, "Select image...", bmpSelectImage, wx.NullBitmap, wx.ITEM_NORMAL, "Select image", "Select image", None)
-        toolbar.AddTool(ID_PROJECT_GENERATE, "Generate", bmpGenerate, wx.NullBitmap, wx.ITEM_NORMAL, "Generate", "Generate", None)
-        toolbar.AddTool(ID_PROJECT_RESET, "Reset", bmpReset, wx.NullBitmap, wx.ITEM_NORMAL, "Reset", "Reset", None)
-        toolbar.AddTool(ID_PROJECT_FIT_IMAGE, "Fit image to frame size", bmpFit, wx.NullBitmap, wx.ITEM_NORMAL, "Fit image to frame size", "Fit image to frame size", None)
-        toolbar.AddSeparator()
-        toolbar.AddTool(ID_PROJECT_SELECT_ZOOM_MODE, "Zoom mode", bmpSelectZoomMode, wx.NullBitmap, wx.ITEM_NORMAL, "Switch to zoom mode", "Switch to zoom mode", None)
-        toolbar.AddTool(ID_PROJECT_SELECT_FINISH_MODE, "Zoom mode", bmpSelectFinishMode, wx.NullBitmap, wx.ITEM_NORMAL, "Switch to finish mode", "Switch to finish mode", None)
-        toolbar.AddTool(ID_PROJECT_HISTORY_UP, "Zoom mode", bmpUp, wx.NullBitmap, wx.ITEM_NORMAL, "Show parent step", "Show parent step", None)
+    def constructToolbar(self):
+        self.toolBar = self.CreateToolBar()
 
-        toolbar.Realize()
+        self.addTool(self.toolBar, ID_FILE_OPEN_PROJECT, "Open project")
 
-        self.SetToolBar(toolbar)
+        self.addTool(self.toolBar, ID_FILE_SAVE_PROJECT, "Save project")
+        self.toolBar.AddSeparator()
+        self.addTool(self.toolBar, ID_PROJECT_SELECT_SOURCEIMAGE, "Select image...")
+        self.addTool(self.toolBar, ID_PROJECT_GENERATE, "Generate")
+        self.addTool(self.toolBar, ID_PROJECT_RESET, "Reset")
+        self.addTool(self.toolBar, ID_PROJECT_FIT_IMAGE, "Fit image to frame size")
+        self.toolBar.AddSeparator()
+        self.addTool(self.toolBar, ID_PROJECT_SELECT_ZOOM_MODE, "Zoom mode")
+        self.addTool(self.toolBar, ID_PROJECT_SELECT_FINISH_MODE, "Zoom mode")
+        self.addTool(self.toolBar, ID_PROJECT_HISTORY_UP, "Zoom mode")
+        
+        self.toolBar.Realize()
 
-    def createMenu(self):
-        menuBar = wx.MenuBar()
+        self.SetToolBar(self.toolBar)
+
+    def constructMenu(self):
+        self.menuBar = wx.MenuBar()
         debugMenu = wx.Menu()
         debugMenu.Append(ID_DEBUG_SHOWINSPECTIONTOOL, "&Inspection tool", "Show the WX Inspection Tool")
         fileMenu = wx.Menu()
@@ -143,10 +174,22 @@ class MainWindow(wx.Frame):
         projectMenu.Append(ID_PROJECT_SELECT_SOURCEIMAGE, "Se&lect source image", "Select the source image for this project")
         projectMenu.Append(ID_PROJECT_RESET, "&Reset", "Reset to default values")
         projectMenu.Append(ID_PROJECT_GENERATE, "&Generate", "Generate")
-        menuBar.Append(fileMenu, "&File")
-        menuBar.Append(projectMenu, "&Project")
-        menuBar.Append(debugMenu, "&Debug")
-        self.SetMenuBar(menuBar)
+        projectMenu.Append(ID_PROJECT_FIT_IMAGE, "Scale image to f&it", "Scale image to fit")
+        projectMenu.Append(ID_PROJECT_SELECT_ZOOM_MODE, "Select &Zoom Mode", "Select Zoom Mode")
+        projectMenu.Append(ID_PROJECT_SELECT_FINISH_MODE, "Select &Finish Mode", "Select Finish Mode")
+        projectMenu.Append(ID_PROJECT_HISTORY_UP, "Go &up (to parent view)", "Go to parent view")
+        self.menuBar.Append(fileMenu, "&File")
+        self.menuBar.Append(projectMenu, "&Project")
+        self.menuBar.Append(debugMenu, "&Debug")
+        self.SetMenuBar(self.menuBar)
+
+    def onMsgNewProject(self, payload):
+        for id in ID_GROUP_PROJECTLOADED:
+            self.enable(id, True)
+
+    def onMsgOpenProject(self, payload):
+        for id in ID_GROUP_PROJECTLOADED:
+            self.enable(id, True)
 
     def onUserCloseMainWindow(self, e):
         exit()
