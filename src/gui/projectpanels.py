@@ -82,7 +82,8 @@ class ProjectPropertiesPanel(wx.Panel):
             (lbl2_1, 1), (textCtrl2_1, 1), 
             (lbl2_2, 1), (textCtrl2_2, 1), 
             (lbl3_1, 1), (textCtrl3_1, 1), 
-            (lbl3_2, 1), (textCtrl3_2, 1)        ])
+            (lbl3_2, 1), (textCtrl3_2, 1)
+        ])
         self.sizer.Add(gridsizer2, 1)
 
         if isinstance(project, JuliaProject):
@@ -104,7 +105,7 @@ class ProjectPropertiesPanel(wx.Panel):
         pw,ph = self.GetSize()
         chkPreview = dynctrl.DynamicCheckBox(self, self.project, "preview", self.styles, label="preview:")
         chkPreview.Bind(wx.EVT_CHECKBOX, self.onPreviewCheckboxChanged)
-        imgPreview = dynctrl.DynamicBitmap(self, self.project, "previewImage", self.styles, size=(150,150))
+        imgPreview = dynctrl.DynamicBitmap(self, self.project, "previewImage", self.styles, False, size=(150,150))
         imgPreview.SetScaleMode(wx.StaticBitmap.Scale_Fill)
         self.btnGenerate = wx.Button(self, label=_("Generate"), size=(pw, 18))
         btnReset = wx.Button(self, label=_("Reset"), size=(pw, 18))

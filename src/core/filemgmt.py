@@ -77,9 +77,9 @@ class ProjectStorage:
     def validProject(self, prjPath):
         log.debug(function=self.validProject, args=prjPath)
         if not os.path.exists(prjPath): return False
-        if not os.path.exists(prjPath+"/source.png"): return False
-        if not os.path.exists(prjPath+"/plots.npz"): return False
-        if not os.path.exists(prjPath+"/properties.json"): return False
+        if not os.path.exists(prjPath+os.sep+"source.png"): return False
+        if not os.path.exists(prjPath+os.sep+"plots.npz"): return False
+        if not os.path.exists(prjPath+os.sep+"properties.json"): return False
         return True
 
     def getProjects(self):

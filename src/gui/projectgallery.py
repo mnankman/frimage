@@ -2,6 +2,7 @@ from PIL import Image
 import wx
 from wx.lib.scrolledpanel import ScrolledPanel
 import json
+import os
 
 from lib import log
 from lib.modelobject import ModelObject
@@ -54,7 +55,12 @@ class ProjectGalleryFrame(wx.Frame):
             c.Destroy()
 
     def constructProjectTile(self, name, path):
-        return self.constructTile(name, path+"/source.png")
+        list = ["thumbnail.png", "source.png"]
+        p = None
+        for fName in list:
+            p = self.storage.toPath(name + os.sep + fName)
+            log.debug(function=self.constructProjectTile, args=(name, name+os.sep+fName, p))
+            if p: return self.constructTile(name, p)
 
     def loadImage(self, path):
         # use PIL to load the image in stead of wx.Image to prevent 

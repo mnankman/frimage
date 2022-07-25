@@ -373,12 +373,11 @@ class Project(ModelObject):
     def generate(self):
         pass
 
-    #TODO: maintain aspect ratio of the larger generated image 
     def getPreviewSize(self):
         w,h = self.getSize()
         l = w if w>h else h
-        d=0.1
-        while l*d>100: d=d*0.1
+        d=0.25
+        while l*d>1000: d=d*0.1
         return (int(w*d), int(h*d))
 
     def prePreview(self, generator, **setup):
@@ -677,6 +676,25 @@ class MandelbrotProject(Project):
             area=self.currentSet.getArea().getAll()
         )
     
+    def saveThumbnail(self, storage):
+        im = self.getRootSet().getCachedImage().copy()
+        im.thumbnail((150,150))
+        src = self.getProjectSource().getSourceImage()
+        if src!=None:
+            srcThumb = src.copy()
+            srcThumb.thumbnail((50,50))
+            im.paste(srcThumb, (5, 5))
+        if im!=None:
+            path = storage.toPath("thumbnail.png", False)
+            try:
+                im.save(path)
+            except OSError as oe:
+                log.error(oe, function=self.savePlots)
+            except AttributeError as ae:
+                log.error(ae, function=self.savePlots)
+            finally:
+                pass    
+
     def savePlots(self, storage):
         self.getProjectSource().saveSourceImage(storage)
         self.getRootSet().savePlots(storage)
@@ -831,6 +849,25 @@ class JuliaProject(Project):
             cxy=self.currentSet.getCxy().getCxy()
         )
     
+    def saveThumbnail(self, storage):
+        im = self.getRootSet().getCachedImage().copy()
+        im.thumbnail((150,150))
+        src = self.getProjectSource().getSourceImage()
+        if src!=None:
+            srcThumb = src.copy()
+            srcThumb.thumbnail((50,50))
+            im.paste(srcThumb, (5, 5))
+        if im!=None:
+            path = storage.toPath("thumbnail.png", False)
+            try:
+                im.save(path)
+            except OSError as oe:
+                log.error(oe, function=self.savePlots)
+            except AttributeError as ae:
+                log.error(ae, function=self.savePlots)
+            finally:
+                pass    
+
     def savePlots(self, storage):
         self.getProjectSource().saveSourceImage(storage)
         self.getRootSet().savePlots(storage)

@@ -92,6 +92,7 @@ class Model(AbstractModel, Publisher):
 
     def save(self, storage):
         self.getCurrentProject().setVersion(self.getApplication().getVersion())
+        self.getCurrentProject().saveThumbnail(storage)
         self.getCurrentProject().savePlots(storage)
         storage.write("properties.json", self.saveProperties)
         self.getCurrentProject().clearModified(True)

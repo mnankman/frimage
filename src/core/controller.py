@@ -35,13 +35,12 @@ class Controller:
     async def generate(self, progressHandler=None, **kw):
         await self.model.generate(progressHandler, **kw)
 
-    async def startPreview(self, **kw):
+    async def startPreview(self, **setup):
         log.trace(function=self.startPreview)
         while self.getCurrentProject().getPreview():
             if self.getCurrentProject().isModified(True):
-                await self.getModel().preview(**kw)
-                #self.getCurrentProject().clearModified()
-            await asyncio.sleep(2)
+                await self.getModel().preview(**setup)
+            await asyncio.sleep(3)
         log.trace("previewing stopped")
 
     def getGeneratedImage(self):
