@@ -87,10 +87,11 @@ class Publisher:
         self.mq = MessageQueue()
         self.events = { event : dict() for event in events }
 
+    '''
     def __del__(self):
         del self.mq
         del self.events
-
+    '''
     def get_subscribers(self, event):
         return self.events[event]
 

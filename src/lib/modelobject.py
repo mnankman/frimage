@@ -29,7 +29,7 @@ class ModelObject(PersistentObject, Publisher):
             parent.addChild(self)
 
     def __del__(self):
-        Publisher.__del__(self)
+        #Publisher.__del__(self)
         #log.trace(function=self.__del__, args=self.getFullId())
         self._reset()
 
