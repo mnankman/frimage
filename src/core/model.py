@@ -1,12 +1,14 @@
-from numpy import deprecate_with_doc
-from lib import log, util
-from lib.pubsub import Publisher
-from lib.modelobject import ModelObject
-import core.fgen
-from lib.imgbox import ImageBox
+#foreign
 from PIL import Image
 import numpy as np
 import json
+
+#local
+from lib import log
+from lib.pubsub import Publisher
+from lib.modelobject import ModelObject
+from lib.imgbox import ImageBox
+import core.fgen
 
 class Application(ModelObject):
     def __init__(self):
@@ -406,9 +408,13 @@ class Project(ModelObject):
         b = self.getBorderSize()
         p = self.getBorderColourPick()        
         pixels = self.getGradientPixels()
+        try:
+            plot = self.getGeneratedPlot()
+        except:
+            return None
         if pixels!=None and b!=None and p!=None:
             fractalBox = ImageBox(ImageBox.ORIENTATION_HORIZONTAL, b, b, pixels[p])
-            fractalBox.addImage(core.fgen.getImage(self.getSize(), self.getGeneratedPlot(), self.getGradientPixels()))
+            fractalBox.addImage(core.fgen.getImage(self.getSize(), plot, pixels))
             return fractalBox.getImage()
         return None
 
@@ -426,10 +432,10 @@ class Project(ModelObject):
     def getGeneratedImage(self):
         return self.getFormattedImage()
 
-    def saveImages(self, storage):
+    def savePlots(self, storage):
         pass
 
-    def loadImages(self, storage):
+    def loadPlots(self, storage):
         pass
 
     def toString(self):
@@ -483,7 +489,6 @@ class GeneratedSet(ModelObject):
         return self.__generatedPlot__
 
     def setGeneratedPlot(self, plot):
-        log.debug(function=self.setGeneratedPlot, args=plot)
         self.__generatedPlot__ = plot
         self.setModified()
 
@@ -523,50 +528,39 @@ class GeneratedSet(ModelObject):
             depth = sd if sd>depth else depth
         return depth
 
-    def savePlot(self, storage):
-        im = Image.fromarray(self.getGeneratedPlot()).convert("RGB")
-        imgPath = storage.toPath(self.getName()+"_plot.png", False)
-        im.save(imgPath)
-        log.debug("saved plot to ", imgPath, function=self.savePlot)
-
-    def saveImages(self, storage):
-        self.savePlot(storage)
-        im = self.getCachedImage()
-        if im != None:
-            imgPath = storage.toPath(self.getName()+".png", False)
-            im.save(imgPath)
-            log.debug("saved image to ", imgPath, function=self.saveImages)
+    def getPlots(self):
+        plots = {self.getName():self.getGeneratedPlot()}
         for gs in self.getGeneratedSets():
-            gs.saveImages(storage)
+            plots.update(gs.getPlots())
+        return plots
 
-    def loadPlot(self, storage):
-        imgPath = storage.toPath(self.getName()+"_plot.png")
-        if imgPath!=None: 
-            try:
-                im = Image.open(imgPath)
-                self.setGeneratedPlot(np.array(im))
-            except OSError as oe:
-                log.error(oe, function=self.loadImages)
-            except AttributeError as ae:
-                log.error(ae, function=self.loadImages)
-            finally:
-                pass
-
-    def loadImages(self, storage):
-        self.loadPlot(storage)
-        imgPath = storage.toPath(self.getName()+".png")
-        if imgPath!=None: 
-            try:
-                im = Image.open(imgPath)
-                self.setCachedImage(im)
-            except OSError as oe:
-                log.error(oe, function=self.loadImages)
-            except AttributeError as ae:
-                log.error(ae, function=self.loadImages)
-            finally:
-                pass
+    def setPlots(self, plots):
+        if self.getName() in plots.keys():
+            self.setGeneratedPlot(plots[self.getName()])
         for gs in self.getGeneratedSets():
-            gs.loadImages(storage)
+            gs.setPlots(plots)
+
+    def savePlots(self, storage):
+        path = storage.toPath("plots.npz", False)
+        plots = self.getPlots()
+        try:
+            np.savez_compressed(path, **plots)
+        except OSError as oe:
+            log.error(oe, function=self.savePlots)
+        except AttributeError as ae:
+            log.error(ae, function=self.savePlots)
+        finally:
+            pass
+
+    def loadPlots(self, storage):
+        path = storage.toPath("plots.npz", False)
+        try:
+            plots = np.load(path)
+            self.setPlots(plots)
+        except OSError as oe:
+            log.error(oe, function=self.loadPlots)
+        except AttributeError as ae:
+            log.error(ae, function=self.loadPlots)
 
 class MandelbrotProject(Project):
     def __init__(self):
@@ -612,7 +606,11 @@ class MandelbrotProject(Project):
 
     def getGeneratedImage(self):
         if self.currentSet == None: return None
-        return self.currentSet.getCachedImage()
+        im = self.currentSet.getCachedImage()
+        if im==None:
+            im = self.getFormattedImage()
+            self.currentSet.setCachedImage(im)
+        return im
 
     def getGeneratedPlot(self):
         if self.currentSet == None: return None
@@ -679,12 +677,12 @@ class MandelbrotProject(Project):
             area=self.currentSet.getArea().getAll()
         )
     
-    def saveImages(self, storage):
+    def savePlots(self, storage):
         self.getProjectSource().saveSourceImage(storage)
-        self.getRootSet().saveImages(storage)
+        self.getRootSet().savePlots(storage)
 
-    def loadImages(self, storage):
-        self.getRootSet().loadImages(storage)
+    def loadPlots(self, storage):
+        self.getRootSet().loadPlots(storage)
 
 class GeneratedJuliaSet(GeneratedSet):
     def __init__(self, parent, name):
@@ -756,7 +754,11 @@ class JuliaProject(Project):
 
     def getGeneratedImage(self):
         if self.currentSet == None: return None
-        return self.currentSet.getCachedImage()
+        im = self.currentSet.getCachedImage()
+        if im==None:
+            im = self.getFormattedImage()
+            self.currentSet.setCachedImage(im)
+        return im
 
     def getGeneratedPlot(self):
         if self.currentSet == None: return None
@@ -827,59 +829,33 @@ class JuliaProject(Project):
             cxy=self.currentSet.getCxy().getCxy()
         )
     
-    def saveImages(self, storage):
+    def savePlots(self, storage):
         self.getProjectSource().saveSourceImage(storage)
-        self.getRootSet().saveImages(storage)
+        self.getRootSet().savePlots(storage)
 
-    def loadImages(self, storage):
-        self.getRootSet().loadImages(storage)
+    def loadPlots(self, storage):
+        self.getRootSet().loadPlots(storage)
 
 class AbstractModel():
-    def __init__(self):
-        pass
-
-    def getApplication(self):
-        pass    
-
-    def getApplicationTitle(self):
-        pass
-    
-    def newProject(self, projectType, name=None):
-        pass
-
-    async def generate(self, progressHandler=None, **kw):
-        pass
-
-    def selectProjectSourceImage(self, path):
-        pass
-
-    def getGeneratedImage(self):
-        pass
-
-    def getProjectSourceImage(self):
-        pass
-
-    def getCurrentProject(self):
-        pass
-
-    def openProject(self, data):
-        pass
-
-    def setAttribute(self, attrName, attrValue):
-        pass
-
-    def load(self, storage):
-        pass
-
-    def save(self, storage):
-        pass
+    def __init__(self): pass
+    def getApplication(self): pass    
+    def getApplicationTitle(self): pass    
+    def newProject(self, projectType, name=None): pass
+    async def generate(self, progressHandler=None, **kw): pass
+    async def preview(self, **kw): pass
+    def selectProjectSourceImage(self, path): pass
+    def getGeneratedImage(self): pass
+    def getProjectSourceImage(self): pass
+    def getCurrentProject(self): pass
+    def setAttribute(self, attrName, attrValue): pass
+    def load(self, storage): pass
+    def save(self, storage): pass
  
-
 class Model(AbstractModel, Publisher):
     PROJECT_TYPE_JULIA = 1
     PROJECT_TYPE_MANDELBROT = 2
     VALID_PROJECT_TYPES = [PROJECT_TYPE_JULIA, PROJECT_TYPE_MANDELBROT]
-    EVENTS = ["msg_new_project", "msg_generate_complete", "msg_open_project", "msg_sourceimage_selected"]
+    EVENTS = ["msg_new_project", "msg_generate_complete", "msg_open_project", "msg_project_saved", "msg_sourceimage_selected"]
     def __init__(self):
         self.__application__ = Application()
         self.__currentProject__ = None
@@ -909,6 +885,7 @@ class Model(AbstractModel, Publisher):
     def saveProperties(self, io):
         data = json.dumps(self.__currentProject__.serialize(), indent=4)
         io.write(data)
+        self.dispatch("msg_project_saved", {"project": self.__currentProject__})
 
     def loadProperties(self, io):
         data = json.load(io)
@@ -925,11 +902,11 @@ class Model(AbstractModel, Publisher):
 
     def load(self, storage):
         storage.read("properties.json", self.loadProperties)
-        self.getCurrentProject().loadImages(storage)
+        self.getCurrentProject().loadPlots(storage)
         self.getCurrentProject().clearModified()
 
     def save(self, storage):
-        self.getCurrentProject().saveImages(storage)
+        self.getCurrentProject().savePlots(storage)
         storage.write("properties.json", self.saveProperties)
         self.getCurrentProject().clearModified()
 
