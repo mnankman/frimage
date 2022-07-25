@@ -6,7 +6,7 @@ from wx.lib.inspection import InspectionTool
 
 from lib import log
 
-from core.model import JuliaProject, Model
+from core.model.model import Model
 from core.controller import Controller
 import gui.zoompanel as zoompanel
 import gui.dialogs as dlg

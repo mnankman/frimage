@@ -1,6 +1,6 @@
 import json
 from lib import log
-from core.model import Model, AbstractModel
+from core.model.model import Model, AbstractModel 
 import core.filemgmt as filemgmt
 import asyncio
 

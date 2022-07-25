@@ -3,6 +3,8 @@ import wx
 from lib import log
 from gui import i18n
 
+#TODO: make an About-dialog 
+
 DEFAULT_DIR = "."
 
 FILESPEC_IMAGES = {

@@ -1,6 +1,7 @@
 import wx
 import wx.lib.newevent as NE
-import core.model
+from core.model.project import Project 
+
 from PIL import Image
 from lib import log
 import gui.dynctrl as dynctrl
@@ -44,7 +45,7 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
     def setImage(self, pilImg):
         if pilImg!=None:
             self.__pilImage__ = pilImg
-        elif isinstance(self.modelObject, core.model.Project):
+        elif isinstance(self.modelObject, Project):
             self.__pilImage__ = Image.new("RGB", self.modelObject.getSize())  
         else:
             self.__pilImage__ = Image.new("RGB", self.GetSize())
@@ -73,7 +74,7 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         return (ix,iy,iw,ih)
 
     def getArea(self):
-        assert isinstance(self.modelObject, core.model.Project)
+        assert isinstance(self.modelObject, Project)
         return self.modelObject.getArea()
         
     def setAreaRect(self, rect):
@@ -208,6 +209,7 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
         return (rx, ry, rw, rh)
 
     # calculates largest fit while maintaining aspect ratio of the image
+    # FIXME: does not seem to work correctly when cw<>ch
     def calcImageFitSize(self, pilImg, targetSize):
         tw,th = targetSize          
         cw,ch = pilImg.size

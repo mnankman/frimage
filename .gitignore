@@ -1,12 +1,13 @@
 src/__pycache__/*
 src/core/__pycache__/*
+src/core/model/__pycache__/*
 src/gui/__pycache__/*
 src/lib/__pycache__/*
 src/lib/ext/__pycache__/*
-src/resource/*.jpg
+resource/*.jpg
 savedprojects/*
 photolibrary/*
-src/storage/*
+storage/*
 src/app_base.py
 src/geni18n.py
 src/app_const.py

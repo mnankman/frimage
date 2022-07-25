@@ -4,7 +4,7 @@ import wx.lib.progressindicator as progress
 
 from lib import log
 
-import core.model as model
+from core.model.project import JuliaProject
 import gui.dynctrl as dynctrl 
 import gui.zoompanel as zoompanel
 import random
@@ -85,7 +85,7 @@ class ProjectPropertiesPanel(wx.Panel):
             (lbl3_2, 1), (textCtrl3_2, 1)        ])
         self.sizer.Add(gridsizer2, 1)
 
-        if isinstance(project, model.JuliaProject):
+        if isinstance(project, JuliaProject):
             self.cxy = project.getCxy()
             lbl5_1 = wx.StaticText(self, label="cx:", size=(120, 20))
             lbl5_2 = wx.StaticText(self, label="cy:", size=(120, 20))
@@ -109,7 +109,7 @@ class ProjectPropertiesPanel(wx.Panel):
         self.btnGenerate = wx.Button(self, label=_("Generate"), size=(pw, 18))
         btnReset = wx.Button(self, label=_("Reset"), size=(pw, 18))
         self.progressBar = progress.ProgressIndicator(self, size=(pw,5))
-        if isinstance(project, model.JuliaProject):
+        if isinstance(project, JuliaProject):
             btnRandomCxy = wx.Button(self, label=_("Random Cx & Cy"), size=(pw, 18))
             btnRandomCxy.Bind(wx.EVT_BUTTON, self.onRandomCxy)
             gridsizer4.Add(btnRandomCxy, 1)
