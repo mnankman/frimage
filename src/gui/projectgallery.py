@@ -57,6 +57,8 @@ class ProjectGalleryFrame(wx.Frame):
         return self.constructTile(name, path+"/source.png")
 
     def loadImage(self, path):
+        # use PIL to load the image in stead of wx.Image to prevent 
+        # the warning message: "iCCP: known incorrect sRGB profile"
         im = Image.open(path)
         wxImage = wx.Image(im.size)
         wxImage.SetData(im.convert('RGB').tobytes())
