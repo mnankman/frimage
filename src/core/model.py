@@ -415,15 +415,16 @@ class Project(ModelObject):
 
     def getFormattedImage(self):
         log.debug(function=self.getFormattedImage)
-        b = self.getBorderSize()
+        borderSize = self.getBorderSize()
         p = self.getBorderColourPick()        
         pixels = self.getGradientPixels()
         try:
             plot = self.getGeneratedPlot()
         except:
             return None
-        if pixels!=None and b!=None and p!=None:
-            fractalBox = ImageBox(ImageBox.ORIENTATION_HORIZONTAL, b, b, pixels[p])
+        if pixels!=None and borderSize!=None and p!=None:
+            borderColour = pixels[p] if p < len(pixels) else (0,0,0)
+            fractalBox = ImageBox(ImageBox.ORIENTATION_HORIZONTAL, borderSize, borderSize, borderColour)
             fractalBox.addImage(core.fgen.getImage(self.getSize(), plot, pixels))
             return fractalBox.getImage()
         return None
