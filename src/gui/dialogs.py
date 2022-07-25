@@ -87,6 +87,8 @@ class Messages:
             self.__window__ = window
 
         def message(self, message, style):
+            log.debug(function=self.message, args=(message, style))
+    
             if self.__window__ != None:
                 dlg = wx.MessageDialog(self.__window__, message, style=style)
                 return dlg.ShowModal()

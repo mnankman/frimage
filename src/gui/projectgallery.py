@@ -1,10 +1,12 @@
-from lib.modelobject import ModelObject
+from PIL import Image
 import wx
 from wx.lib.scrolledpanel import ScrolledPanel
+import json
+
+from lib import log
+from lib.modelobject import ModelObject
 import gui.dynctrl as dynctrl 
 import core.filemgmt as filemgmt
-import json
-from lib import log
 
 RESOURCES="resource"
 
@@ -52,13 +54,20 @@ class ProjectGalleryFrame(wx.Frame):
             c.Destroy()
 
     def constructProjectTile(self, name, path):
-        return self.constructTile(name, path+"/root.png")
+        return self.constructTile(name, path+"/source.png")
+
+    def loadImage(self, path):
+        im = Image.open(path)
+        wxImage = wx.Image(im.size)
+        wxImage.SetData(im.convert('RGB').tobytes())
+        wxImage.SetAlpha(im.convert("RGBA").tobytes()[3::4])
+        return wxImage
 
     def constructTile(self, name, bmpPath):
         tilePnl = wx.Panel(self.scroller, size=(150,170))
         self.applyStyles(tilePnl)
         bmpBtn = wx.BitmapButton(tilePnl, id=ID_OPEN, 
-            bitmap=wx.Image(bmpPath).Rescale(140,140).ConvertToBitmap(), 
+            bitmap=self.loadImage(bmpPath).Rescale(140,140).ConvertToBitmap(), 
             name=name, size=(150, 150), style=wx.BORDER_NONE)
         bmpBtn.Bind(wx.EVT_BUTTON, self.onRead)
         lbl = wx.StaticText(tilePnl, label=name)
@@ -102,7 +111,7 @@ class ProjectGalleryFrame(wx.Frame):
 
     def constructProperties(self, data):        
         for item, val in data.items():
-            if not item in ["type", "elements"]:
+            if not item in ["elements"]:
                 attrTxt = wx.StaticText(self.selPrjPnl, label=item, style=wx.EXPAND)
                 valueTxt = wx.StaticText(self.selPrjPnl, label=str(val), style=wx.EXPAND)
                 self.infoGrid.Add(attrTxt, 1)
@@ -117,7 +126,7 @@ class ProjectGalleryFrame(wx.Frame):
         self.constructProperties(data)
         txt = wx.StaticText(self.selPrjPnl, label="source", style=wx.EXPAND)
         src = wx.BitmapButton(self.selPrjPnl, 
-            bitmap=wx.Image(self.storage.toPath("source.png")).Rescale(140,140).ConvertToBitmap(), 
+            bitmap=self.loadImage(self.storage.toPath("source.png")).Rescale(140,140).ConvertToBitmap(), 
             size=(150, 150), style=wx.BORDER_NONE)
         self.infoGrid.Add(txt, 1)
         self.infoGrid.Add(src, 1)
@@ -146,8 +155,8 @@ class ProjectGalleryFrame(wx.Frame):
 
     def onOpen(self, e):
         log.debug(function=self.onOpen, args=e.GetEventObject().GetName())
-        self.controller.openProject(self.storage.name)
         self.Hide()
+        self.controller.openProject(self.storage.name)
 
     def onUserCloseWindow(self, e):
         self.Hide()

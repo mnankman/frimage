@@ -86,7 +86,6 @@ class DynamicBitmap(DynamicCtrl, wx.StaticBitmap):
         return wx.Image(self.GetSize())
 
     def setBitmap(self, pilImg, size=None):
-        log.debug(function=self.setBitmap, args=(pilImg, size))
         if pilImg!=None:
             if size!=None and self.autoSize: 
                 im = pilImg.resize(size, Image.BOX)

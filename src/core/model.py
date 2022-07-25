@@ -242,6 +242,7 @@ class Project(ModelObject):
         super().__init__()
         self.__name = None
         self.__artist = None
+        self.__version = None
         self.__width = None
         self.__height = None
         self.__borderSize = 0
@@ -256,6 +257,7 @@ class Project(ModelObject):
         self.previewImage = None
         self.persist("name")
         self.persist("artist")
+        self.persist("version")
         self.persist("width")
         self.persist("height")
         self.persist("borderSize", 2)
@@ -270,6 +272,10 @@ class Project(ModelObject):
         
     def setArtist(self, artist):
         self.__artist = artist
+        self.setModified()
+
+    def setVersion(self, version):
+        self.__version = version
         self.setModified()
         
     def setWidth(self, w):
@@ -308,6 +314,9 @@ class Project(ModelObject):
 
     def getArtist(self):
         return self.__artist
+
+    def getVersion(self):
+        return self.__version
 
     def getSize(self):
         return (self.__width, self.__height)
@@ -879,6 +888,7 @@ class Model(AbstractModel, Publisher):
             self.__currentProject__ = MandelbrotProject()
         if name!=None: 
             self.__currentProject__.setName(name)
+        self.__currentProject__.setVersion(self.getApplication().getVersion())
         self.dispatch("msg_new_project", {"project": self.__currentProject__})
         return self.__currentProject__
 
@@ -906,6 +916,7 @@ class Model(AbstractModel, Publisher):
         self.getCurrentProject().clearModified()
 
     def save(self, storage):
+        self.getCurrentProject().setVersion(self.getApplication().getVersion())
         self.getCurrentProject().savePlots(storage)
         storage.write("properties.json", self.saveProperties)
         self.getCurrentProject().clearModified()
