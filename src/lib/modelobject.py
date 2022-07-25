@@ -85,16 +85,20 @@ class ModelObject(PersistentObject, Publisher):
     def onMsgChildObjectModified(self, payload):
         self.dispatch("msg_object_modified", {"object": self, "modified": payload})
 
-    def isModified(self, recursive=False):
+    def getModified(self, recursive=True):
         if not self.__modified__ and recursive:
-            return self.isChildModified(recursive)
+            return self.getChildModified(recursive)
         else:
             return self.__modified__
 
-    def isChildModified(self, recursive=False):
+    def isModified(self, recursive=False):
+        return self.getModified(recursive)
+
+    def getChildModified(self, recursive=False):
         for c in self.getChildren():
             if recursive:
-                return c.isModified(recursive)
+                return c.getModified(recursive)
+        return False
 
     def getModifiedObjects(self):
         modified = []

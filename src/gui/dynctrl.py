@@ -28,6 +28,18 @@ class DynamicCtrl:
     def onModelObjectChange(self, payload):
         pass
 
+class DynamicLabel(DynamicCtrl, wx.StaticText):
+    def __init__(self, parent, modelObject, attributeName, styles, **kw):
+        DynamicCtrl.__init__(self, modelObject, attributeName)
+        wx.StaticText.__init__(self, parent, **kw)
+        self.SetBackgroundColour(styles["BackgroundColour"])
+        self.SetForegroundColour(styles["ForegroundColour"])
+        self.SetLabel(str(modelObject.getAttribute(self.attributeName)))
+
+    def onModelObjectChange(self, payload):
+        obj = payload["object"]
+        self.SetLabel(str(obj.getAttribute(self.attributeName)))
+
 class DynamicTextCtrl(DynamicCtrl, wx.TextCtrl):
     def __init__(self, parent, modelObject, attributeName, styles, **kw):
         DynamicCtrl.__init__(self, modelObject, attributeName)
@@ -48,11 +60,12 @@ class DynamicSpinCtrl(DynamicCtrl, wx.SpinCtrl):
         self.SetBackgroundColour(styles["BackgroundColour"])
         self.SetForegroundColour(styles["ForegroundColour"])
         self.SetValue(str(modelObject.getAttribute(self.attributeName)))
+        self.Bind(wx.EVT_TEXT, self.onUserValueChange) 
         self.Bind(wx.EVT_SPINCTRL, self.onUserValueChange) 
 
     def onModelObjectChange(self, payload):
         obj = payload["object"]
-        self.SetValue(str(obj.getAttribute(self.attributeName)))
+        self.SetValue(int(obj.getAttribute(self.attributeName)))
 
 class DynamicCheckBox(DynamicCtrl, wx.CheckBox):
     def __init__(self, parent, modelObject, attributeName, styles, **kw):

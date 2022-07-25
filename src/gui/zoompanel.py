@@ -121,7 +121,7 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
 # ------- METHODS FOR HANDLING EVENTS -------
 
     def onModelObjectChange(self, payload):
-        if "modified" in payload: return
+        #if "modified" in payload: return
         #log.debug(function=self.onModelObjectChange, args=payload)
         obj = payload["object"]
         pilImg = obj.getAttribute(self.attributeName)

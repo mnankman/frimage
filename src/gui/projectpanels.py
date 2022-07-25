@@ -38,6 +38,8 @@ class ProjectPropertiesPanel(wx.Panel):
         self.sizer.Clear()
         gridsizer1 = wx.FlexGridSizer(2, gap=(5, 5))
         
+        lbl5_1 = wx.StaticText(self, label="modified:", size=(120, 20))
+        dynLbl5_1 = dynctrl.DynamicLabel(self, self.project, "modified", self.styles, size=(150, 24))
         lbl4_1 = wx.StaticText(self, label="project name:", size=(120, 20))
         lbl4_2 = wx.StaticText(self, label="project artist:", size=(120, 20))
         textCtrl4_1 = dynctrl.DynamicTextCtrl(self, self.project, "name", self.styles, size=(150, 24))
@@ -50,6 +52,7 @@ class ProjectPropertiesPanel(wx.Panel):
         im3.SetScaleMode(wx.StaticBitmap.Scale_Fill)
         chkBox1 = dynctrl.DynamicCheckBox(self, self.projectSource, "flipGradient", self.styles, label="flip gradient:")
         gridsizer1.AddMany([            
+            (lbl5_1, 1), (dynLbl5_1, 1), 
             (lbl4_1, 1), (textCtrl4_1, 1), 
             (lbl4_2, 1), (textCtrl4_2, 1),
             (im1, 1), (im2, 1), 

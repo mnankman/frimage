@@ -414,6 +414,7 @@ class Project(ModelObject):
         generator.setup(**setup)
 
     def getFormattedImage(self):
+        log.debug(function=self.getFormattedImage)
         b = self.getBorderSize()
         p = self.getBorderColourPick()        
         pixels = self.getGradientPixels()
@@ -614,9 +615,10 @@ class MandelbrotProject(Project):
         self.setSize((400,400))
 
     def getGeneratedImage(self):
+        log.debug(function=self.getGeneratedImage)
         if self.currentSet == None: return None
         im = self.currentSet.getCachedImage()
-        if im==None:
+        if im==None or self.getModified():
             im = self.getFormattedImage()
             self.currentSet.setCachedImage(im)
         return im
@@ -626,6 +628,7 @@ class MandelbrotProject(Project):
         return self.currentSet.getGeneratedPlot()
 
     def setGeneratedPlot(self, plot):
+        log.debug(function=self.setGeneratedPlot)
         assert self.currentSet != None
         self.currentSet.setGeneratedPlot(plot)
         self.currentSet.setCachedImage(self.getFormattedImage())
@@ -762,6 +765,7 @@ class JuliaProject(Project):
         self.setCxy((-0.6523253489293293, -0.44925312958958075))
 
     def getGeneratedImage(self):
+        log.debug(function=self.getGeneratedImage)
         if self.currentSet == None: return None
         im = self.currentSet.getCachedImage()
         if im==None:
@@ -774,6 +778,7 @@ class JuliaProject(Project):
         return self.currentSet.getGeneratedPlot()
 
     def setGeneratedPlot(self, plot):
+        log.debug(function=self.setGeneratedPlot)
         assert self.currentSet != None
         self.currentSet.setGeneratedPlot(plot)
         self.currentSet.setCachedImage(self.getFormattedImage())
@@ -889,6 +894,7 @@ class Model(AbstractModel, Publisher):
         if name!=None: 
             self.__currentProject__.setName(name)
         self.__currentProject__.setVersion(self.getApplication().getVersion())
+        self.getCurrentProject().clearModified(True)
         self.dispatch("msg_new_project", {"project": self.__currentProject__})
         return self.__currentProject__
 
@@ -913,13 +919,13 @@ class Model(AbstractModel, Publisher):
     def load(self, storage):
         storage.read("properties.json", self.loadProperties)
         self.getCurrentProject().loadPlots(storage)
-        self.getCurrentProject().clearModified()
+        self.getCurrentProject().clearModified(True)
 
     def save(self, storage):
         self.getCurrentProject().setVersion(self.getApplication().getVersion())
         self.getCurrentProject().savePlots(storage)
         storage.write("properties.json", self.saveProperties)
-        self.getCurrentProject().clearModified()
+        self.getCurrentProject().clearModified(True)
 
     def setAttribute(self, attrName, attrValue):
         self.getCurrentProject().setAttribute(attrName, attrValue)

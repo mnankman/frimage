@@ -38,7 +38,7 @@ class Controller:
     async def startPreview(self, **kw):
         log.trace(function=self.startPreview)
         while self.getCurrentProject().getPreview():
-            if self.getCurrentProject().isModified():
+            if self.getCurrentProject().isModified(True):
                 await self.getModel().preview(**kw)
                 #self.getCurrentProject().clearModified()
             await asyncio.sleep(2)
