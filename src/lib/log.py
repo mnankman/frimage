@@ -6,8 +6,8 @@ from lib.ext.colored import colored
 class ColorLog(object):
 
     colormap = dict(
-        debug=dict(color='grey', attrs=['bold']),
-        info=dict(color='white'),
+        debug=dict(color='white', attrs=['bold']),
+        info=dict(color='cyan'),
         warn=dict(color='yellow'),
         warning=dict(color='yellow'),
         error=dict(color='red'),
