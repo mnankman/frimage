@@ -7,6 +7,7 @@ from PIL import Image
 from lib import log
 import gui.dynctrl as dynctrl
 
+ImageUpdatedEvent, EVT_IMAGE_UPDATED = NE.NewEvent()
 ZoomAreaEvent, EVT_ZOOM_AREA = NE.NewEvent()
 DiveDownEvent, EVT_DIVEDOWN = NE.NewEvent()
 
@@ -53,6 +54,7 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
             self.__pilImage__ = Image.new("RGB", self.GetSize())
         self.SetSize(self.__pilImage__.size)
         self.Refresh()
+        wx.PostEvent(self, ImageUpdatedEvent())
 
     def getImage(self):
         return self.__pilImage__

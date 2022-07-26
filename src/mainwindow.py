@@ -31,7 +31,7 @@ ID_PROJECT_GENERATE=302
 ID_PROJECT_RESET=303
 ID_PROJECT_SELECT_ZOOM_MODE=304
 ID_PROJECT_SELECT_FINISH_MODE=305
-ID_PROJECT_HISTORY_UP=306
+ID_PROJECT_UP=306
 ID_PROJECT_FIT_IMAGE=307
 
 ID_DEBUG_SHOWINSPECTIONTOOL=601
@@ -49,7 +49,7 @@ ICONS = {
     ID_PROJECT_FIT_IMAGE: RESOURCES+"/aspect_ratio.png",
     ID_PROJECT_SELECT_ZOOM_MODE: RESOURCES+"/picture_in_picture.png",
     ID_PROJECT_SELECT_FINISH_MODE: RESOURCES+"/image.png",
-    ID_PROJECT_HISTORY_UP: RESOURCES+"/north_west.png",
+    ID_PROJECT_UP: RESOURCES+"/north_west.png",
 }
 
 WINDOW_STYLES = {
@@ -82,8 +82,9 @@ class MainWindow(wx.Frame):
  
         self.configPnl = ProjectPropertiesPanel(self, styles, self.controller, size=(310,800))
         self.ResultPnl = ResultPanel(self, styles, self.controller, style=wx.SUNKEN_BORDER, size=(1600,1600))
+        self.ResultPnl.Bind(zoompanel.EVT_IMAGE_UPDATED, self.onImageUpdated)
         self.ResultPnl.Bind(zoompanel.EVT_ZOOM_AREA, self.configPnl.onGenerate)
-        self.ResultPnl.Bind(zoompanel.EVT_DIVEDOWN, self.onUserProjectHistoryDown)
+        self.ResultPnl.Bind(zoompanel.EVT_DIVEDOWN, self.onDiveDown)
 
         self.sizer.Add(self.configPnl, 1)
         self.sizer.Add(self.ResultPnl, 5)
@@ -109,7 +110,7 @@ class MainWindow(wx.Frame):
         self.Bind(event=wx.EVT_MENU, handler=self.onUserSaveGeneratedImage, id=ID_FILE_SAVE_GENERATED_IMAGE)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserSelectZoomMode, id=ID_PROJECT_SELECT_ZOOM_MODE)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserSelectFinishMode, id=ID_PROJECT_SELECT_FINISH_MODE)
-        self.Bind(event=wx.EVT_MENU, handler=self.onUserProjectHistoryUp, id=ID_PROJECT_HISTORY_UP)
+        self.Bind(event=wx.EVT_MENU, handler=self.onProjectUp, id=ID_PROJECT_UP)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserProjectFitImage, id=ID_PROJECT_FIT_IMAGE)
 
         for id in ID_GROUP_PROJECTLOADED:
@@ -151,7 +152,7 @@ class MainWindow(wx.Frame):
         self.toolBar.AddSeparator()
         self.addTool(self.toolBar, ID_PROJECT_SELECT_ZOOM_MODE, "Zoom mode")
         self.addTool(self.toolBar, ID_PROJECT_SELECT_FINISH_MODE, "Zoom mode")
-        self.addTool(self.toolBar, ID_PROJECT_HISTORY_UP, "Zoom mode")
+        self.addTool(self.toolBar, ID_PROJECT_UP, "Zoom mode")
         
         self.toolBar.Realize()
 
@@ -180,7 +181,7 @@ class MainWindow(wx.Frame):
         projectMenu.Append(ID_PROJECT_FIT_IMAGE, "Scale image to f&it", "Scale image to fit")
         projectMenu.Append(ID_PROJECT_SELECT_ZOOM_MODE, "Select &Zoom Mode", "Select Zoom Mode")
         projectMenu.Append(ID_PROJECT_SELECT_FINISH_MODE, "Select &Finish Mode", "Select Finish Mode")
-        projectMenu.Append(ID_PROJECT_HISTORY_UP, "Go &up (to parent view)", "Go to parent view")
+        projectMenu.Append(ID_PROJECT_UP, "Go &up (to parent view)", "Go to parent view")
         self.menuBar.Append(fileMenu, "&File")
         self.menuBar.Append(projectMenu, "&Project")
         self.menuBar.Append(debugMenu, "&Debug")
@@ -271,16 +272,21 @@ class MainWindow(wx.Frame):
         self.ResultPnl.setFinishMode()
         e.Skip()
     
-    def onUserProjectHistoryUp(self, e):
-        log.debug(function=self.onUserProjectHistoryUp)
+    def onProjectUp(self, e):
+        log.debug(function=self.onProjectUp)
         self.controller.clearProjectModifications()
         self.controller.up()
         e.Skip()
 
-    def onUserProjectHistoryDown(self, e):
-        log.debug(function=self.onUserProjectHistoryDown)
+    def onDiveDown(self, e):
+        log.debug(function=self.onDiveDown)
         self.controller.clearProjectModifications()
         self.controller.down(e.set)
+        e.Skip()
+
+    def onImageUpdated(self, e):
+        log.debug(function=self.onImageUpdated)
+        self.controller.clearProjectModifications()
         e.Skip()
 
     def onUserProjectFitImage(self, e):
@@ -308,7 +314,7 @@ def start():
     # configure logging
     logging.basicConfig(format='[%(name)s] %(levelname)s:%(message)s', level=logging.DEBUG)
     log.setLoggerLevel("lib.persistentobject", logging.ERROR)
-    log.setLoggerLevel("lib.modelobject", logging.DEBUG)
+    log.setLoggerLevel("lib.modelobject", logging.ERROR)
     log.setLoggerLevel("gui.projectgallery", logging.ERROR)
     log.setLoggerLevel("core.filemgmt", logging.ERROR)
     log.setLoggerLevel("lib.pubsub", logging.ERROR)
