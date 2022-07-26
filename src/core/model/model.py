@@ -12,12 +12,16 @@ class Application(ModelObject):
         super().__init__()
         self.__name__ = "FriMage Studio"
         self.__version__ = "0.2"
+        self.__storageDir__ = "storage"
 
     def getName(self):
         return self.__name__
 
     def getVersion(self):
         return self.__version__
+
+    def getStorageDir(self):
+        return self.__storageDir__
 
 class AbstractModel():
     def __init__(self): pass

@@ -26,7 +26,7 @@ class ProjectGalleryFrame(wx.Frame):
 
         self.styles = styles
         self.applyStyles(self)
-        self.storage = filemgmt.ProjectStorage()
+        self.storage = filemgmt.ProjectStorage(self.model.getApplication().getStorageDir())
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self.sizer)
@@ -55,11 +55,11 @@ class ProjectGalleryFrame(wx.Frame):
             c.Destroy()
 
     def constructProjectTile(self, name, path):
+        log.debug(function=self.constructProjectTile, args=(name, path))
         list = ["thumbnail.png", "source.png"]
         p = None
         for fName in list:
-            p = self.storage.toPath(name + os.sep + fName)
-            log.debug(function=self.constructProjectTile, args=(name, name+os.sep+fName, p))
+            p = filemgmt.toPath(path, fName)
             if p: return self.constructTile(name, p)
 
     def loadImage(self, path):
@@ -110,7 +110,6 @@ class ProjectGalleryFrame(wx.Frame):
     def loadGallery(self):
         self.scrollsizer = wx.FlexGridSizer(cols=5, hgap=5, vgap=5)
         self.scroller.SetSizer(self.scrollsizer)
-        self.scrollsizer.Clear()
         projects = self.storage.getProjects()
         for name, path in projects.items():
             tile = self.constructProjectTile(name, path)
@@ -142,18 +141,6 @@ class ProjectGalleryFrame(wx.Frame):
 
     def read(self):
         self.storage.read("properties.json", self.readProperties)
-
-    def constructDummyTile(self, i):
-        return self.constructTile("dummy"+str(i), RESOURCES+"/icon.png")
-
-    def loadDummyGallery(self):
-        self.scrollsizer = wx.FlexGridSizer(cols=5, hgap=5, vgap=5)
-        self.scrollsizer.Clear()
-        for i in range(60):
-            self.scrollsizer.Add(self.constructDummyTile(i), 1)
-        self.scrollsizer.Layout()
-        self.scroller.SetSizer(self.scrollsizer)
-        self.scroller.SetScrollRate(5,5)
 
     def onRead(self, e):
         btn = e.GetEventObject()
