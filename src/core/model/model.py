@@ -37,7 +37,10 @@ class AbstractModel():
     def setAttribute(self, attrName, attrValue): pass
     def load(self, storage): pass
     def save(self, storage): pass
- 
+    def clearProjectModifications(self): pass
+    def up(self): pass
+    def down(self, genSet): pass
+    
 class Model(AbstractModel, Publisher):
     PROJECT_TYPE_JULIA = 1
     PROJECT_TYPE_MANDELBROT = 2
@@ -92,14 +95,12 @@ class Model(AbstractModel, Publisher):
     def load(self, storage):
         storage.read("properties.json", self.loadProperties)
         self.getCurrentProject().loadPlots(storage)
-        self.getCurrentProject().clearModified(True)
 
     def save(self, storage):
         self.getCurrentProject().setVersion(self.getApplication().getVersion())
         self.getCurrentProject().saveThumbnail(storage)
         self.getCurrentProject().savePlots(storage)
         storage.write("properties.json", self.saveProperties)
-        self.getCurrentProject().clearModified(True)
 
     def setAttribute(self, attrName, attrValue):
         self.getCurrentProject().setAttribute(attrName, attrValue)
@@ -125,6 +126,15 @@ class Model(AbstractModel, Publisher):
 
     def getCurrentProject(self):
         return self.__currentProject__
+
+    def clearProjectModifications(self):
+        self.getCurrentProject().clearModified(True)
+
+    def up(self):
+        self.getCurrentProject().up()
+
+    def down(self, genSet):
+        self.getCurrentProject().down(genSet)
 
     
 

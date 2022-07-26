@@ -73,6 +73,8 @@ class MainWindow(wx.Frame):
         self.model = self.controller.getModel()
         self.model.subscribe(self, "msg_new_project", self.onMsgNewProject)
         self.model.subscribe(self, "msg_open_project", self.onMsgOpenProject)
+        self.model.subscribe(self, "msg_project_saved", self.onMsgProjectSaved)
+        self.model.subscribe(self, "msg_generate_complete", self.onMsgGenerateComplete)
 
         self.prjGallery = pgallery.ProjectGalleryFrame(WINDOW_STYLES, self.controller)
 
@@ -81,6 +83,7 @@ class MainWindow(wx.Frame):
         self.configPnl = ProjectPropertiesPanel(self, styles, self.controller, size=(310,800))
         self.ResultPnl = ResultPanel(self, styles, self.controller, style=wx.SUNKEN_BORDER, size=(1600,1600))
         self.ResultPnl.Bind(zoompanel.EVT_ZOOM_AREA, self.configPnl.onGenerate)
+        self.ResultPnl.Bind(zoompanel.EVT_DIVEDOWN, self.onUserProjectHistoryDown)
 
         self.sizer.Add(self.configPnl, 1)
         self.sizer.Add(self.ResultPnl, 5)
@@ -183,13 +186,23 @@ class MainWindow(wx.Frame):
         self.menuBar.Append(debugMenu, "&Debug")
         self.SetMenuBar(self.menuBar)
 
-    def onMsgNewProject(self, payload):
-        for id in ID_GROUP_PROJECTLOADED:
+    def activateTools(self, group):
+        for id in group:
             self.enable(id, True)
 
+    def onMsgNewProject(self, payload):
+        self.activateTools(ID_GROUP_PROJECTLOADED)
+        self.controller.clearProjectModifications()
+
     def onMsgOpenProject(self, payload):
-        for id in ID_GROUP_PROJECTLOADED:
-            self.enable(id, True)
+        self.activateTools(ID_GROUP_PROJECTLOADED)
+        self.controller.clearProjectModifications()
+
+    def onMsgProjectSaved(self, payload):
+        self.controller.clearProjectModifications()
+
+    def onMsgGenerateComplete(self, payload):
+        self.controller.clearProjectModifications()
 
     def onUserCloseMainWindow(self, e):
         exit()
@@ -260,7 +273,14 @@ class MainWindow(wx.Frame):
     
     def onUserProjectHistoryUp(self, e):
         log.debug(function=self.onUserProjectHistoryUp)
-        self.controller.getCurrentProject().up()
+        self.controller.clearProjectModifications()
+        self.controller.up()
+        e.Skip()
+
+    def onUserProjectHistoryDown(self, e):
+        log.debug(function=self.onUserProjectHistoryDown)
+        self.controller.clearProjectModifications()
+        self.controller.down(e.set)
         e.Skip()
 
     def onUserProjectFitImage(self, e):
@@ -288,9 +308,10 @@ def start():
     # configure logging
     logging.basicConfig(format='[%(name)s] %(levelname)s:%(message)s', level=logging.DEBUG)
     log.setLoggerLevel("lib.persistentobject", logging.ERROR)
-    log.setLoggerLevel("lib.modelobject", logging.ERROR)
+    log.setLoggerLevel("lib.modelobject", logging.DEBUG)
     log.setLoggerLevel("gui.projectgallery", logging.ERROR)
     log.setLoggerLevel("core.filemgmt", logging.ERROR)
+    log.setLoggerLevel("lib.pubsub", logging.ERROR)
 
     versions()
        

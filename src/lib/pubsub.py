@@ -1,6 +1,6 @@
 import asyncio
 import functools
-import lib.log
+from lib import log
 
 class MessageQueue:
     MAXQUEUESIZE = 20
@@ -69,6 +69,7 @@ class MessageQueue:
                 if msg:
                     handler = msg[0]
                     payload = msg[1]
+                    log.debug("handle msg: ", payload["event"], handler.__qualname__, function=self.handleNextMessage)
                     handler(payload)
                         
     def __init__(self):
@@ -85,6 +86,9 @@ class Subscriber:
 class Publisher:
     def __init__(self, events):
         self.mq = MessageQueue()
+        # self.events is a dictionary that maps event names to subscriptions to that event
+        # each subscription is a dictionary that maps subscribers (objects) to event handlers (functions)
+        # for instance: self.events = {"msg_new_project": {<object1>: <function1>}, {<object2>: <function2>}}
         self.events = { event : dict() for event in events }
 
     '''
@@ -95,17 +99,17 @@ class Publisher:
     def get_subscribers(self, event):
         return self.events[event]
 
-    def subscribe(self, sub, event, handler=None):
-        if handler == None:
-            handler = getattr(sub, 'update')
-        if not sub in self.get_subscribers(event):
-            self.get_subscribers(event)[sub] = handler
+    def subscribe(self, subscriber, event, handler=None):
+        if handler == None: return
+        if not subscriber in self.get_subscribers(event):
+            self.get_subscribers(event)[subscriber] = handler
 
-    def unsubscribe(self, event, sub):
-        if event in self.events and sub in self.events[event]:
-            del self.events[event][sub]
+    def unsubscribe(self, event, subscriber):
+        if event in self.events and subscriber in self.events[event]:
+            del self.events[event][subscriber]
 
     def dispatch(self, event, payload):
+        log.trace(function=self.dispatch, args=(event, payload))
         if payload:
             payload.update({"event": event})
         else:
@@ -113,6 +117,7 @@ class Publisher:
 
         messages = list()
         for subscriber, handler in self.get_subscribers(event).items():
+            log.debug("append message: ", handler.__qualname__, function=self.dispatch)
             messages.append((handler, payload))
 
         if len(messages)>0:

@@ -200,6 +200,7 @@ class ResultPanel(wx.Panel):
         #self.imZmPnl = zoompanel.ZoomPanel(self, self.project, "generatedImage", self.styles, size=self.GetSize())
         self.imZmPnl = zoompanel.ZoomPanel(self, self.project, "generatedImage", self.styles)
         self.imZmPnl.Bind(zoompanel.EVT_ZOOM_AREA, self.onAreaZoom)
+        self.imZmPnl.Bind(zoompanel.EVT_DIVEDOWN, self.onDiveDown)
         sizer.Add(self.imZmPnl, 1)
         sizer.Layout()
 
@@ -210,6 +211,11 @@ class ResultPanel(wx.Panel):
 
     def onAreaZoom(self, e):
         log.debug(function=self.onAreaZoom)
+        e.Skip()
+        wx.PostEvent(self, e)
+
+    def onDiveDown(self, e):
+        log.debug(function=self.onDiveDown)
         e.Skip()
         wx.PostEvent(self, e)
 

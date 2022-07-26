@@ -1,12 +1,14 @@
 import wx
 import wx.lib.newevent as NE
 from core.model.project import Project 
+from lib.modelobject import ModelObject
 
 from PIL import Image
 from lib import log
 import gui.dynctrl as dynctrl
 
 ZoomAreaEvent, EVT_ZOOM_AREA = NE.NewEvent()
+DiveDownEvent, EVT_DIVEDOWN = NE.NewEvent()
 
 ZOOM_FACTOR_VALUES = [0.05, 0.1, 0.2, 0.25, 0.5, 0.8]
 
@@ -123,7 +125,12 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
 
     def onModelObjectChange(self, payload):
         #if "modified" in payload: return
-        #log.debug(function=self.onModelObjectChange, args=payload)
+        obj = payload["object"]
+        assert isinstance(obj, ModelObject)
+        log.debug(function=self.onModelObjectChange, args=obj.getFullId())
+        if "modified" in payload:
+            mods = obj.getModificationsFromPayload(payload)
+            log.debug(var=("modifications in payload", mods), function=self.onModelObjectChange)
         obj = payload["object"]
         pilImg = obj.getAttribute(self.attributeName)
         if pilImg != self.getImage():
@@ -156,7 +163,7 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
     def OnMouseLeftDown(self, e):
         if self.__mode__ == MODE_ZOOM:
             if self.__genSetUnderMouseCursor__!=None:
-                self.modelObject.down(self.__genSetUnderMouseCursor__)
+                wx.PostEvent(self, DiveDownEvent(set=self.__genSetUnderMouseCursor__))
         elif self.__mode__ == MODE_FINISH:
             x,y,w,h = self.__zoomRect__
             fw,fh = self.calcImageFitSize(self.modelObject.getProjectSource().getSourceImage(), (w, h))

@@ -40,8 +40,10 @@ class ModelObject(PersistentObject, Publisher):
         self.__children__ = {}
 
     def setModified(self):
-        self.__modified__ = True
-        self.dispatch("msg_object_modified", {"object": self} )
+        if not self.__modified__:
+            log.debug(self.getFullId()+".setModified()", var=("self.__modified__", self.__modified__))
+            self.__modified__ = True
+            self.dispatch("msg_object_modified", {"object": self} )
 
     def clearModified(self, recursive=False):
         self.__modified__ = False
@@ -83,7 +85,18 @@ class ModelObject(PersistentObject, Publisher):
         self.setModified()
 
     def onMsgChildObjectModified(self, payload):
+        log.debug(function=self.onMsgChildObjectModified, args=payload["object"].getFullId())
         self.dispatch("msg_object_modified", {"object": self, "modified": payload})
+
+    def getModificationsFromPayload(self, payload):
+        log.debug(function=self.getModificationsFromPayload, args=payload)
+        modifications = []
+        if "object" in payload:
+            obj = payload["object"]
+            modifications.append(obj.getFullId())
+        if "modified" in payload:
+            modifications.extend(self.getModificationsFromPayload(payload["modified"]))
+        return modifications
 
     def getModified(self, recursive=True):
         if not self.__modified__ and recursive:

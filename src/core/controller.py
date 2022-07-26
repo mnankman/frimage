@@ -58,6 +58,9 @@ class Controller:
     def getCurrentProject(self):
         return self.model.getCurrentProject()
 
+    def clearProjectModifications(self):
+        self.model.clearProjectModifications()
+
     def saveProject(self):
         log.debug(function=self.saveProject)
         self.ps.setName(self.getCurrentProject().getName())
@@ -69,5 +72,11 @@ class Controller:
         self.ps.setName(nm)
         self.ps.create()
         self.model.load(self.ps)
+
+    def up(self):
+        self.model.up()
+
+    def down(self, genSet):
+        self.model.down(genSet)
         
 

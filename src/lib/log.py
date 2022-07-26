@@ -6,8 +6,8 @@ from lib.ext.colored import colored
 class ColorLog(object):
 
     colormap = dict(
-        debug=dict(color='white', attrs=['bold']),
-        info=dict(color='cyan'),
+        debug=dict(color='white'),
+        info=dict(color='cyan', attrs=['bold']),
         warn=dict(color='yellow'),
         warning=dict(color='yellow'),
         error=dict(color='red'),
@@ -61,7 +61,7 @@ def log(logger_method, msg, *args, **kwargs):
             varName, varValue = v
             args2 += (varName, "=", varValue)
         else: kwargs2[k] = v
-    msg += argsToString(args)
+    msg += argsToString(args2)
     if len(msg)>0: msg += " | "
     if func:
         msg += func + (fargs if fargs else "()")
