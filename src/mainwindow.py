@@ -254,7 +254,7 @@ class MainWindow(wx.Frame):
 
     def askSaveProject(self):
         if self.controller.getCurrentProject()==None: return
-        if self.controller.getCurrentProject().isModified():
+        if not self.controller.getCurrentProject().getSaved():
             if dlg.message(_("Do you want to save current project?"), wx.YES_NO) == wx.ID_YES:
                 self.controller.saveProject()
 

@@ -58,6 +58,9 @@ class Model(AbstractModel, Publisher):
         title = "{} {}"
         return title.format(self.__application__.getName(), self.__application__.getVersion())
 
+    def getCurrentProject(self):
+        return self.__currentProject__
+
     def newProject(self, projectType, name=None):
         log.trace(function=self.newProject, args=(name, projectType))
         assert projectType in Model.VALID_PROJECT_TYPES
@@ -68,16 +71,22 @@ class Model(AbstractModel, Publisher):
         elif projectType==Model.PROJECT_TYPE_MANDELBROT: 
             self.__currentProject__ = MandelbrotProject()
         if name!=None: 
-            self.__currentProject__.setName(name)
-        self.__currentProject__.setVersion(self.getApplication().getVersion())
+            self.getCurrentProject().setName(name)
+        self.getCurrentProject().setVersion(self.getApplication().getVersion())
         self.getCurrentProject().clearModified(True)
-        self.dispatch("msg_new_project", {"project": self.__currentProject__})
+        self.getCurrentProject().subscribe(self, "msg_object_modified", self.onProjectModified)
+        self.dispatch("msg_new_project", {"project": self.getCurrentProject()})
         return self.__currentProject__
+
+    def onProjectModified(self, payload):
+        self.getCurrentProject().setSaved(False)
+        self.getCurrentProject().clearModified()
 
     def saveProperties(self, io):
         data = json.dumps(self.__currentProject__.serialize(), indent=4)
         io.write(data)
         self.dispatch("msg_project_saved", {"project": self.__currentProject__})
+        self.getCurrentProject().setSaved(True)
 
     def loadProperties(self, io):
         data = json.load(io)
@@ -123,9 +132,6 @@ class Model(AbstractModel, Publisher):
         if self.getCurrentProject():
             self.getCurrentProject().setProjectSourceImage(path)
             self.dispatch("msg_sourceimage_selected", {"source": self.getCurrentProject().getProjectSource().getSource()})
-
-    def getCurrentProject(self):
-        return self.__currentProject__
 
     def clearProjectModifications(self):
         self.getCurrentProject().clearModified(True)

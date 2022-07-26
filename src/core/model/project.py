@@ -22,6 +22,7 @@ class Project(ModelObject):
         self.progress = 0
         self.__preview__ = False
         self.previewImage = None
+        self.saved = False
         self.persist("name")
         self.persist("artist")
         self.persist("version")
@@ -124,6 +125,14 @@ class Project(ModelObject):
     def setProgress(self, p):
         self.progress = p
         self.setModified()
+
+    def getSaved(self):
+        return self.saved
+
+    def setSaved(self, saved):
+        if saved!=self.saved:
+            self.saved = saved
+            self.setModified()
 
     def getGeneratedPlot(self):
         return self.__generatedPlot__

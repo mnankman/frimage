@@ -223,6 +223,8 @@ class GeneratedSet(ModelObject):
         except AttributeError as ae:
             log.error(ae, function=self.loadPlots)
 
+#TODO: implement base class ComplexProject where MandelbrotProject and JuliaProject inherit from
+
 class MandelbrotProject(Project):
     def __init__(self):
         super().__init__()
@@ -341,13 +343,18 @@ class MandelbrotProject(Project):
         )
     
     def saveThumbnail(self, storage):
-        im = self.getRootSet().getCachedImage().copy()
-        im.thumbnail((150,150))
         src = self.getProjectSource().getSourceImage()
-        if src!=None:
-            srcThumb = src.copy()
-            srcThumb.thumbnail((50,50))
-            im.paste(srcThumb, (5, 5))
+        cache = self.getRootSet().getCachedImage()
+        if cache:
+            im = cache.copy()
+            im.thumbnail((150,150))
+            if src:
+                srcThumb = src.copy()
+                srcThumb.thumbnail((50,50))
+                im.paste(srcThumb, (5, 5))
+        elif src:
+            im = src.copy()
+            im.thumbnail((150,150))
         if im!=None:
             path = storage.toPath("thumbnail.png", False)
             try:
@@ -514,13 +521,18 @@ class JuliaProject(Project):
         )
     
     def saveThumbnail(self, storage):
-        im = self.getRootSet().getCachedImage().copy()
-        im.thumbnail((150,150))
         src = self.getProjectSource().getSourceImage()
-        if src!=None:
-            srcThumb = src.copy()
-            srcThumb.thumbnail((50,50))
-            im.paste(srcThumb, (5, 5))
+        cache = self.getRootSet().getCachedImage()
+        if cache:
+            im = cache.copy()
+            im.thumbnail((150,150))
+            if src:
+                srcThumb = src.copy()
+                srcThumb.thumbnail((50,50))
+                im.paste(srcThumb, (5, 5))
+        elif src:
+            im = src.copy()
+            im.thumbnail((150,150))
         if im!=None:
             path = storage.toPath("thumbnail.png", False)
             try:

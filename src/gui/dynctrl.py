@@ -30,15 +30,31 @@ class DynamicCtrl:
 
 class DynamicLabel(DynamicCtrl, wx.StaticText):
     def __init__(self, parent, modelObject, attributeName, styles, **kw):
+        self.valueMap = {}
+        kw2={}
+        for k,v in kw.items():
+            if k=="valuemapping":
+                assert isinstance(v, dict)
+                self.valueMap = v
+            else:
+                kw2[k]=v
         DynamicCtrl.__init__(self, modelObject, attributeName)
-        wx.StaticText.__init__(self, parent, **kw)
+        wx.StaticText.__init__(self, parent, **kw2)
         self.SetBackgroundColour(styles["BackgroundColour"])
         self.SetForegroundColour(styles["ForegroundColour"])
-        self.SetLabel(str(modelObject.getAttribute(self.attributeName)))
+        attrVal = modelObject.getAttribute(self.attributeName)
+        if attrVal in self.valueMap:
+            self.SetLabel(str(self.valueMap[attrVal]))
+        else:
+            self.SetLabel(str(attrVal))
 
     def onModelObjectChange(self, payload):
         obj = payload["object"]
-        self.SetLabel(str(obj.getAttribute(self.attributeName)))
+        attrVal = obj.getAttribute(self.attributeName)
+        if attrVal in self.valueMap:
+            self.SetLabel(str(self.valueMap[attrVal]))
+        else:
+            self.SetLabel(str(attrVal))
 
 class DynamicTextCtrl(DynamicCtrl, wx.TextCtrl):
     def __init__(self, parent, modelObject, attributeName, styles, **kw):
