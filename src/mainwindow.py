@@ -289,6 +289,8 @@ def start():
     logging.basicConfig(format='[%(name)s] %(levelname)s:%(message)s', level=logging.DEBUG)
     log.setLoggerLevel("lib.persistentobject", logging.ERROR)
     log.setLoggerLevel("lib.modelobject", logging.ERROR)
+    log.setLoggerLevel("gui.projectgallery", logging.ERROR)
+    log.setLoggerLevel("core.filemgmt", logging.ERROR)
 
     versions()
        
