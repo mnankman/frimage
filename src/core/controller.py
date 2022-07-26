@@ -1,8 +1,11 @@
+#foreign
+import asyncio
 import json
+
+#project
 from lib import log
 from core.model.model import Model, AbstractModel 
 import core.filemgmt as filemgmt
-import asyncio
 
 class Controller:
     def __init__(self, model):
@@ -79,4 +82,10 @@ class Controller:
     def down(self, genSet):
         self.model.down(genSet)
         
+    #TODO add functionality for removing a subset
+    def remove(self, genset):
+        pass
 
+    #TODO add functionality for saving a generated subset as a new project
+    def saveAsProject(self, genset):
+        pass

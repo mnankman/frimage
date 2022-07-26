@@ -5,7 +5,7 @@ import json
 from lib import log
 from lib.pubsub import Publisher
 from lib.modelobject import ModelObject
-from .project import JuliaProject, MandelbrotProject
+from .complex import JuliaProject, MandelbrotProject
 
 class Application(ModelObject):
     def __init__(self):
