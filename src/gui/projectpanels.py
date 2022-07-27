@@ -11,6 +11,8 @@ import random
         
 RESOURCES="resource"
 
+#TODO: create panel with treeview of a project where all generation steps can be explored and edited (remove)
+
 class ProjectPropertiesPanel(wx.Panel):
     def __init__(self, parent, styles, controller, **kw):
         super(ProjectPropertiesPanel, self).__init__(parent, **kw)    
@@ -24,6 +26,18 @@ class ProjectPropertiesPanel(wx.Panel):
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
+
+        w,h=self.GetSize()
+        gridsizer = wx.FlexGridSizer(1, gap=(5, 5))
+        btnNewMandelbrot = wx.Button(self, label=_("New Mandelbrot project"), size=(w*0.8, 30), style=wx.CENTER)
+        btnNewJulia = wx.Button(self, label=_("New Julia project"), size=(w*0.8, 30), style=wx.CENTER)
+        gridsizer.Add(btnNewMandelbrot, 1)
+        gridsizer.Add(btnNewJulia, 1)
+        btnNewMandelbrot.Bind(wx.EVT_BUTTON, self.onNewMandelbrotProject)
+        btnNewJulia.Bind(wx.EVT_BUTTON, self.onNewJuliaProject)
+        self.sizer.AddSpacer(40)
+        self.sizer.Add(gridsizer, 1, flag=wx.ALIGN_CENTER_HORIZONTAL)
+        self.sizer.Layout()
 
     def cleanUp(self):
         children = self.GetChildren()
@@ -51,16 +65,6 @@ class ProjectPropertiesPanel(wx.Panel):
         im3 = dynctrl.DynamicBitmap(self, self.projectSource, "gradientImage", self.styles, size=(150,20))
         im3.SetScaleMode(wx.StaticBitmap.Scale_Fill)
         chkBox1 = dynctrl.DynamicCheckBox(self, self.projectSource, "flipGradient", self.styles, label="flip gradient:")
-        gridsizer1.AddMany([            
-            (lbl5_1, 1), (dynLbl5_1, 1), 
-            (lbl4_1, 1), (textCtrl4_1, 1), 
-            (lbl4_2, 1), (textCtrl4_2, 1),
-            (im1, 1), (im2, 1), 
-            (im3, 1), (chkBox1, 1)
-        ])
-        self.sizer.Add(gridsizer1, 1)
-        self.sizer.AddSpacer(5)
-
         lbl1_1 = wx.StaticText(self, label="heatmap width:", size=(120, 20))
         lbl1_2 = wx.StaticText(self, label="heatmap height:", size=(120, 20))
         textCtrl1_1 = dynctrl.DynamicSpinCtrl(self, self.projectSource, "heatmapBaseImageWidth", self.styles, size=(60, 18), min=4, max=50, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
@@ -73,10 +77,12 @@ class ProjectPropertiesPanel(wx.Panel):
         lbl3_2 = wx.StaticText(self, label="border colour:", size=(120, 20))
         textCtrl3_1 = dynctrl.DynamicSpinCtrl(self, self.project, "borderSize", self.styles, size=(60, 18), min=0, max=50, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
         textCtrl3_2 = dynctrl.DynamicSpinCtrl(self, self.project, "borderColourPick", self.styles, size=(60, 18), min=1, max=255, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
-
-
-        gridsizer2 = wx.FlexGridSizer(2, gap=(5, 5))
-        gridsizer2.AddMany([
+        gridsizer1.AddMany([
+            (lbl5_1, 1), (dynLbl5_1, 1), 
+            (lbl4_1, 1), (textCtrl4_1, 1), 
+            (lbl4_2, 1), (textCtrl4_2, 1),
+            (im1, 1), (im2, 1), 
+            (im3, 1), (chkBox1, 1),
             (lbl1_1, 1), (textCtrl1_1, 1), 
             (lbl1_2, 1), (textCtrl1_2, 1), 
             (lbl2_1, 1), (textCtrl2_1, 1), 
@@ -84,7 +90,8 @@ class ProjectPropertiesPanel(wx.Panel):
             (lbl3_1, 1), (textCtrl3_1, 1), 
             (lbl3_2, 1), (textCtrl3_2, 1)
         ])
-        self.sizer.Add(gridsizer2, 1)
+        self.sizer.Add(gridsizer1, 1)
+        self.sizer.AddSpacer(10)
 
         if isinstance(project, JuliaProject):
             self.cxy = project.getCxy()
@@ -99,6 +106,7 @@ class ProjectPropertiesPanel(wx.Panel):
                 (lbl5_2, 1), (textCtrl5_2, 1) 
             ])
             self.sizer.Add(gridsizer3, 1)
+            self.sizer.AddSpacer(10)
 
         gridsizer4 = wx.FlexGridSizer(1, gap=(5, 5))
 
@@ -162,6 +170,14 @@ class ProjectPropertiesPanel(wx.Panel):
 
     def onReset(self, e):
         self.project.reset()
+        e.Skip()
+
+    def onNewMandelbrotProject(self, e):
+        self.controller.newMandelbrotProject("mandelbrot")
+        e.Skip()
+
+    def onNewJuliaProject(self, e):
+        self.controller.newMandelbrotProject("julia")
         e.Skip()
 
     def onRandomCxy(self, e):
