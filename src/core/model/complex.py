@@ -79,10 +79,11 @@ class Area(ModelObject):
         return s
 
 class Cxy(ModelObject):
-    def __init__(self, project):
+    def __init__(self, project, cxy=None):
         super().__init__(project)
         self.__cx = None
         self.__cy = None
+        if cxy: self.setCxy(cxy)
         self.persist("cx", None)
         self.persist("cy", None)
 
@@ -231,24 +232,17 @@ class GeneratedSet(ModelObject):
         except AttributeError as ae:
             log.error(ae, function=self.loadPlots)
 
-#TODO: implement base class ComplexProject where MandelbrotProject and JuliaProject inherit from
-
-class MandelbrotProject(Project):
-    DEFAULT_AREA = (-2.0,1.0,-1.5,1.5)
-    DEFAULT_SIZE = (400,400)
+class ComplexProject(Project):
     def __init__(self):
         super().__init__()
-        self.rootSet = GeneratedSet(self, "root")
+        self.initRootSet()
         self.currentSet = self.rootSet
         self.generator = None
         self.__maxIt = None
         self.persist("maxIt")
-        self.init()
 
-    def init(self):
-        self.setSize(MandelbrotProject.DEFAULT_SIZE)
-        self.setArea(MandelbrotProject.DEFAULT_AREA)
-        self.setMaxIt(256)
+    def initRootSet(self):
+        self.rootSet = GeneratedSet(self, "root")
 
     def setMaxIt(self, maxIt):
         self.__maxIt = maxIt
@@ -273,9 +267,6 @@ class MandelbrotProject(Project):
 
     def getCurrentSet(self):
         return self.currentSet
-
-    def reset(self):
-        self.setSize((400,400))
 
     def getGeneratedImage(self):
         log.debug(function=self.getGeneratedImage)
@@ -329,7 +320,7 @@ class MandelbrotProject(Project):
         current = self.getCurrentSet()
         root = self.getRootSet()
         if current == root:
-            self.rootSet = GeneratedSet(self, "root", MandelbrotProject.DEFAULT_AREA)
+            self.initRootSet()
             self.currentSet = self.rootSet
         else:
             self.currentSet = current.getParent()
@@ -352,32 +343,6 @@ class MandelbrotProject(Project):
             self.generator.source = self.getProjectSource().getSource()
             self.setGeneratedImage(self.generator.getImage())
 
-    def getGenerator(self):
-        return core.fgen.MandelbrotGenerator(self.getProjectSource().getSource())
-
-    def preGenerate(self, generator, **setup):
-        log.debug(function=self.preGenerate, args=setup)
-        if setup!=None and "area" in setup.keys():
-            areaRect = setup["area"]
-        else:
-            areaRect = self.currentSet.getArea().getRect()
-        if areaRect!=None and self.currentSet.hasGeneratedPlot():
-            genSet = self.currentSet.addGeneratedSet()
-            genSet.getArea().setRect(areaRect)
-            self.currentSet = genSet
-        generator.setup(
-            size=self.getSize(), 
-            reverseColors=self.getProjectSource().getFlipGradient(), 
-            area=self.currentSet.getArea().getAll()
-        )
-
-    def prePreview(self, generator, **setup):
-        log.debug(function=self.prePreview, args=generator)
-        generator.setup(
-            reverseColors=self.getProjectSource().getFlipGradient(), 
-            area=self.currentSet.getArea().getAll()
-        )
-    
     def saveThumbnail(self, storage):
         src = self.getProjectSource().getSourceImage()
         cache = self.getRootSet().getCachedImage()
@@ -409,10 +374,56 @@ class MandelbrotProject(Project):
     def loadPlots(self, storage):
         self.getRootSet().loadPlots(storage)
 
+
+class MandelbrotProject(ComplexProject):
+    DEFAULT_AREA = (-2.0,1.0,-1.5,1.5)
+    DEFAULT_SIZE = (400,400)
+    def __init__(self):
+        super().__init__()
+        self.init()
+
+    def initRootSet(self):
+        self.rootSet = GeneratedSet(self, "root", MandelbrotProject.DEFAULT_AREA)
+
+    def init(self):
+        self.setSize(MandelbrotProject.DEFAULT_SIZE)
+        self.setArea(MandelbrotProject.DEFAULT_AREA)
+        self.setMaxIt(256)
+
+    def reset(self):
+        self.setSize(MandelbrotProject.DEFAULT_SIZE)
+
+    def getGenerator(self):
+        return core.fgen.MandelbrotGenerator(self.getProjectSource().getSource())
+
+    def preGenerate(self, generator, **setup):
+        log.debug(function=self.preGenerate, args=setup)
+        if setup!=None and "area" in setup.keys():
+            areaRect = setup["area"]
+        else:
+            areaRect = self.currentSet.getArea().getRect()
+        if areaRect!=None and self.currentSet.hasGeneratedPlot():
+            genSet = self.currentSet.addGeneratedSet()
+            genSet.getArea().setRect(areaRect)
+            self.currentSet = genSet
+        generator.setup(
+            size=self.getSize(), 
+            reverseColors=self.getProjectSource().getFlipGradient(), 
+            area=self.currentSet.getArea().getAll()
+        )
+
+    def prePreview(self, generator, **setup):
+        log.debug(function=self.prePreview, args=generator)
+        generator.setup(
+            reverseColors=self.getProjectSource().getFlipGradient(), 
+            area=self.currentSet.getArea().getAll()
+        )
+
+
 class GeneratedJuliaSet(GeneratedSet):
-    def __init__(self, parent, name):
-        super().__init__(parent, name)
-        self.cxy = Cxy(self)
+    def __init__(self, parent, name, area=None, cxy=None):
+        super().__init__(parent, name, area)
+        self.cxy = Cxy(self, cxy)
 
     def getCxy(self):
         return self.cxy
@@ -427,7 +438,10 @@ class GeneratedJuliaSet(GeneratedSet):
         return GeneratedSet.addGeneratedSet(self)
 
 
-class JuliaProject(Project):
+class JuliaProject(ComplexProject):
+    DEFAULT_AREA = (-0.0008,0.0008,-0.0008,0.0008)
+    DEFAULT_SIZE = (400,300)
+    DEFAULT_CXY = (-0.6523253489293293, -0.44925312958958075)
     def __init__(self):
         super().__init__()
         self.rootSet = GeneratedJuliaSet(self, "root")
@@ -437,94 +451,25 @@ class JuliaProject(Project):
         self.persist("maxIt")
         self.init()
 
+    def initRootSet(self):
+        self.rootSet = GeneratedJuliaSet(self, "root", JuliaProject.DEFAULT_AREA, JuliaProject.DEFAULT_CXY)
+
     def init(self):
-        self.setSize((600,450))
-        self.setArea((-0.0008,0.0008,-0.0008,0.0008))
-        self.setCxy((-0.6523253489293293, -0.44925312958958075))
+        self.setSize(JuliaProject.DEFAULT_SIZE)
+        self.setArea(JuliaProject.DEFAULT_AREA)
+        self.setCxy(JuliaProject.DEFAULT_CXY)
         self.setMaxIt(256)
 
-    def setMaxIt(self, maxIt):
-        self.__maxIt = maxIt
-        self.setModified()
-
-    def getMaxIt(self):
-        return self.__maxIt
-
-    def getArea(self):
-        return self.currentSet.getArea()
-
-    def setArea(self, area):
-        self.currentSet.setArea(area)
-        self.setModified()
+    def reset(self):
+        self.setSize(JuliaProject.DEFAULT_SIZE)
+        self.setArea(JuliaProject.DEFAULT_AREA)
+        self.setCxy(JuliaProject.DEFAULT_CXY)
 
     def getCxy(self):
         return self.currentSet.getCxy()
 
     def setCxy(self, cxy):
         self.currentSet.setCxy(cxy)
-
-    # this one is needed so PersistentObject can restore it from a serialized stream
-    def getGeneratedJuliaSet(self):
-        return self.rootSet
-
-    def getRootSet(self):
-        return self.rootSet
-
-    def getCurrentSet(self):
-        return self.currentSet
-
-    def reset(self):
-        self.setSize((600,450))
-        self.setCxy((-0.6523253489293293, -0.44925312958958075))
-
-    def getGeneratedImage(self):
-        log.debug(function=self.getGeneratedImage)
-        if self.currentSet == None: return None
-        im = self.currentSet.getCachedImage()
-        if im==None:
-            im = self.getFormattedImage()
-            self.currentSet.setCachedImage(im)
-        return im
-
-    def getGeneratedPlot(self):
-        if self.currentSet == None: return None
-        return self.currentSet.getGeneratedPlot()
-
-    def setGeneratedPlot(self, plot):
-        log.debug(function=self.setGeneratedPlot)
-        assert self.currentSet != None
-        self.currentSet.setGeneratedPlot(plot)
-        self.currentSet.setCachedImage(self.getFormattedImage())
-        self.setModified()
-
-    def getMaxPlotValue(self):
-        if self.currentSet == None: return None
-        return self.currentSet.getMaxPlotValue()
-        
-    def setMaxPlotValue(self, v):
-        assert self.currentSet != None
-        self.currentSet.setMaxPlotValue(v)
-        self.setModified()
-
-    def down(self, genSet):
-        parent = genSet.getParent()
-        if parent != None and isinstance(genSet, GeneratedSet) and parent==self.currentSet:
-            log.debug(function=self.down, args=genSet)
-            self.currentSet = genSet
-            self.setModified()
-
-    def up(self):
-        parent = self.currentSet.getParent()
-        if parent != None and isinstance(parent, GeneratedSet):
-            log.debug(function=self.up)
-            self.currentSet = parent
-            self.setModified()
- 
-    def setProjectSourceImage(self, path):
-        super().setProjectSourceImage(path)
-        if self.generator:
-            self.generator.source = self.getProjectSource().getSource()
-            self.setGeneratedImage(self.generator.getImage())
 
     def getGenerator(self):
         return core.fgen.JuliaGenerator(self.getProjectSource().getSource())
@@ -555,35 +500,3 @@ class JuliaProject(Project):
             area=self.currentSet.getArea().getAll(),
             cxy=self.currentSet.getCxy().getCxy()
         )
-    
-    def saveThumbnail(self, storage):
-        src = self.getProjectSource().getSourceImage()
-        cache = self.getRootSet().getCachedImage()
-        if cache:
-            im = cache.copy()
-            im.thumbnail((150,150))
-            if src:
-                srcThumb = src.copy()
-                srcThumb.thumbnail((50,50))
-                im.paste(srcThumb, (5, 5))
-        elif src:
-            im = src.copy()
-            im.thumbnail((150,150))
-        if im!=None:
-            path = storage.toPath("thumbnail.png", False)
-            try:
-                im.save(path)
-            except OSError as oe:
-                log.error(oe, function=self.savePlots)
-            except AttributeError as ae:
-                log.error(ae, function=self.savePlots)
-            finally:
-                pass    
-
-    def savePlots(self, storage):
-        self.getProjectSource().saveSourceImage(storage)
-        self.getRootSet().savePlots(storage)
-
-    def loadPlots(self, storage):
-        self.getRootSet().loadPlots(storage)
-
