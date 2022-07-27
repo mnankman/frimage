@@ -11,7 +11,7 @@ import random
         
 RESOURCES="resource"
 
-                                        class ProjectPanel(wx.Panel):
+class ProjectPanel(wx.Panel):
     def __init__(self, parent, styles, controller, **kw):
         super(ProjectPanel, self).__init__(parent, **kw)    
         self.styles = styles
