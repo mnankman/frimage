@@ -15,7 +15,7 @@ class DynamicCtrl:
 
     def __del__(self):
         try:
-            self.modelObject.unsubscribe(self, self.onModelObjectChange)
+            self.modelObject.unsubscribe(self.onModelObjectChange, "msg_object_modified")
         except AttributeError as e:
             log.warning(e, function=self.__del__)
 

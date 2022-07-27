@@ -11,31 +11,95 @@ import random
         
 RESOURCES="resource"
 
-class ProjectExplorerPanel(wx.Panel):
+                                        class ProjectPanel(wx.Panel):
     def __init__(self, parent, styles, controller, **kw):
-        super(ProjectExplorerPanel, self).__init__(parent, **kw)    
+        super(ProjectPanel, self).__init__(parent, **kw)    
         self.styles = styles
-        self.SetBackgroundColour(styles["BackgroundColour"])
-        self.SetForegroundColour(styles["ForegroundColour"])
+        self.SetBackgroundColour(self.styles["BackgroundColour"])
+        self.SetForegroundColour(self.styles["ForegroundColour"])
+
         self.controller = controller
         self.model = self.controller.getModel()
         self.model.subscribe(self, "msg_new_project", self.onUpdate)
         self.model.subscribe(self, "msg_open_project", self.onUpdate)
 
+    def cleanUp(self):
+        children = self.GetChildren()
+        for c in children:
+            self.RemoveChild(c)
+
+    def construct(self, project):
+        pass
+
+    def onUpdate(self, payload):
+        #self.cleanUp()
+        if "project" in payload.keys():            
+            prj = payload["project"]
+        elif "object" in payload.keys():
+            prj = payload["object"]
+        else:
+            return
+        self.construct(prj)
+        if prj != self.controller.getCurrentProject():
+            prj.subscribe(self, "msg_object_modified", self.onUpdate)
+        self.Refresh()
+
+class StatusBar(ProjectPanel):
+    def __init__(self, parent, styles, controller, **kw):
+        super(StatusBar, self).__init__(parent, styles, controller, **kw)    
+        self.SetBackgroundColour("#444444")
+        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.SetSizer(self.sizer)
+        self.sizer.Layout()
+        self.SetAutoLayout(True)
+        
+    def construct(self, project):
+        log.debug(function=self.construct, args=project.getFullId())
+        self.project = project
+        self.sizer.Clear(True)
+        gridsizer = wx.FlexGridSizer(1,3,5,0)
+        self.progressBar = progress.ProgressIndicator(self)
+        gridsizer.AddMany([
+            (dynctrl.DynamicLabel(self, self.project, "path", self.styles), 1, wx.ALIGN_BOTTOM),
+            (dynctrl.DynamicLabel(self, self.project, "saved", self.styles, valuemapping={False: "*", True: ""}), 1, wx.ALIGN_BOTTOM),
+        ])
+        self.sizer.Add(gridsizer, 10)
+        self.sizer.Add(self.progressBar, 0, wx.EXPAND | wx.ALL, 0)
+        
+        self.sizer.Layout()
+
+    def onProgress(self, generator, p):
+        self.progressBar.SetValue(p)
+
+    def onGenerate(self, e):
+        if isinstance(e, zoompanel.ZoomAreaEvent):
+            self.selectedArea = e.area
+        else:
+            self.selectedArea = None
+        self.progressBar.Start()
+        StartCoroutine(self.generate, self)
+        e.Skip()
+
+    async def generate(self):
+        await self.controller.generate(self.onProgress, area=self.selectedArea)
+
+
+class ProjectExplorerPanel(ProjectPanel):
+    def __init__(self, parent, styles, controller, **kw):
+        super(ProjectExplorerPanel, self).__init__(parent, styles, controller, **kw)
+        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.SetSizer(self.sizer)
+        self.sizer.Layout()
+        self.SetAutoLayout(True)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
         self.SetSize(self.GetParent().GetSize())
         self.sizer.Layout()
 
-    def cleanUp(self):
-        children = self.GetChildren()
-        for c in children:
-            c.Destroy()
-
     def construct(self, project):
         log.debug(function=self.construct, args=project.getFullId())
         self.project = project
-        self.sizer.Clear()
+        self.sizer.Clear(True)
         self.projectTree = wx.TreeCtrl(self, wx.ID_ANY, wx.DefaultPosition, self.GetSize(), wx.TR_HAS_BUTTONS)
         self.projectTree.SetBackgroundColour(self.styles["BackgroundColour"])
         self.projectTree.SetForegroundColour(self.styles["ForegroundColour"])
@@ -51,30 +115,11 @@ class ProjectExplorerPanel(wx.Panel):
         for gs in genset.getGeneratedSets():
             item = self.projectTree.AppendItem(parentItem, gs.getName())
             self.constructTree(item, gs)
-
-    def onUpdate(self, payload):
-        if "project" in payload.keys():            
-            prj = payload["project"]
-        elif "object" in payload.keys():
-            prj = payload["object"]
-        else:
-            return
-        self.construct(prj)
-        prj.subscribe(self, "msg_object_modified", self.onUpdate)
-        self.Refresh()
-
     
  
-class ProjectPropertiesPanel(wx.Panel):
+class ProjectPropertiesPanel(ProjectPanel):
     def __init__(self, parent, styles, controller, **kw):
-        super(ProjectPropertiesPanel, self).__init__(parent, **kw)    
-        self.styles = styles
-        self.SetBackgroundColour(styles["BackgroundColour"])
-        self.SetForegroundColour(styles["ForegroundColour"])
-        self.controller = controller
-        self.model = self.controller.getModel()
-        self.model.subscribe(self, "msg_new_project", self.onMsgNewProject)
-        self.model.subscribe(self, "msg_open_project", self.onMsgOpenProject)
+        super(ProjectPropertiesPanel, self).__init__(parent, styles, controller, **kw)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
@@ -93,21 +138,14 @@ class ProjectPropertiesPanel(wx.Panel):
         self.Bind(wx.EVT_SIZE, self.onResize)
         self.sizer.Layout()
 
-    def cleanUp(self):
-        children = self.GetChildren()
-        for c in children:
-            c.Destroy()
-
     def construct(self, project):
         self.project = project
         self.area = self.project.getArea()
         self.projectSource = self.project.getProjectSource()
 
-        self.sizer.Clear()
+        self.sizer.Clear(True)
         gridsizer1 = wx.FlexGridSizer(2, gap=(5, 5))
         
-        lbl5_1 = wx.StaticText(self, label="modified:", size=(120, 20))
-        dynLbl5_1 = dynctrl.DynamicLabel(self, self.project, "saved", self.styles, valuemapping={False: "Yes", True: "No"}, size=(150, 24))
         lbl4_1 = wx.StaticText(self, label="project name:", size=(120, 20))
         lbl4_2 = wx.StaticText(self, label="project artist:", size=(120, 20))
         textCtrl4_1 = dynctrl.DynamicTextCtrl(self, self.project, "name", self.styles, size=(150, 24))
@@ -132,7 +170,6 @@ class ProjectPropertiesPanel(wx.Panel):
         textCtrl3_1 = dynctrl.DynamicSpinCtrl(self, self.project, "borderSize", self.styles, size=(60, 18), min=0, max=50, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
         textCtrl3_2 = dynctrl.DynamicSpinCtrl(self, self.project, "borderColourPick", self.styles, size=(60, 18), min=1, max=255, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
         gridsizer1.AddMany([
-            (lbl5_1, 1), (dynLbl5_1, 1), 
             (lbl4_1, 1), (textCtrl4_1, 1), 
             (lbl4_2, 1), (textCtrl4_2, 1),
             (im1, 1), (im2, 1), 
@@ -169,21 +206,13 @@ class ProjectPropertiesPanel(wx.Panel):
         chkPreview.Bind(wx.EVT_CHECKBOX, self.onPreviewCheckboxChanged)
         imgPreview = dynctrl.DynamicBitmap(self, self.project, "previewImage", self.styles, False, size=(150,150))
         imgPreview.SetScaleMode(wx.StaticBitmap.Scale_Fill)
-        self.btnGenerate = wx.Button(self, label=_("Generate"), size=(pw, 18))
-        btnReset = wx.Button(self, label=_("Reset"), size=(pw, 18))
-        self.progressBar = progress.ProgressIndicator(self, size=(pw,5))
         if isinstance(project, JuliaProject):
             btnRandomCxy = wx.Button(self, label=_("Random Cx & Cy"), size=(pw, 18))
             btnRandomCxy.Bind(wx.EVT_BUTTON, self.onRandomCxy)
             gridsizer4.Add(btnRandomCxy, 1)
-        gridsizer4.Add(btnReset, 1)
         gridsizer4.Add(chkPreview, 1)
         gridsizer4.Add(imgPreview, 1)
-        gridsizer4.Add(self.btnGenerate, 1)
-        gridsizer4.Add(self.progressBar, 1)
-        self.btnGenerate.Bind(wx.EVT_BUTTON, self.onGenerate)
-        btnReset.Bind(wx.EVT_BUTTON, self.onReset)
-
+        
         self.sizer.Add(gridsizer4, 1)
         self.sizer.Layout()
 
@@ -192,39 +221,10 @@ class ProjectPropertiesPanel(wx.Panel):
         w,h = self.GetSize()
         self.Refresh(rect=(0,0,w,h))
 
-    def onMsgNewProject(self, payload):
-        prj = payload["project"]
-        self.cleanUp()
-        self.construct(prj)
-        self.Refresh()
-
-    def onMsgOpenProject(self, payload):
-        prj = payload["project"]
-        self.cleanUp()
-        self.construct(prj)
-        self.Refresh()
-
     def onPreviewCheckboxChanged(self, e):
         obj = e.GetEventObject()
         if obj.IsChecked():
             StartCoroutine(self.controller.startPreview, self)
-        e.Skip()
-
-    def onProgress(self, generator, p):
-        self.progressBar.SetValue(p)
-        if p>=100: 
-            self.btnGenerate.Enable()
-            self.btnGenerate.SetLabel(_("Generate"))
-
-    def onGenerate(self, e):
-        if isinstance(e, zoompanel.ZoomAreaEvent):
-            self.selectedArea = e.area
-        else:
-            self.selectedArea = None
-        self.progressBar.Start()
-        self.btnGenerate.SetLabel(_("working") + "...")
-        self.btnGenerate.Disable()
-        StartCoroutine(self.generate, self)
         e.Skip()
 
     def onReset(self, e):
@@ -242,46 +242,30 @@ class ProjectPropertiesPanel(wx.Panel):
     def onRandomCxy(self, e):
         self.project.setCxy((random.random() * 2.0 - 1.0, random.random() - 0.5))
 
-    async def generate(self):
-        await self.controller.generate(self.onProgress, area=self.selectedArea)
 
-
-class ResultPanel(wx.Panel):
+class ResultPanel(ProjectPanel):
     def __init__(self, parent, styles, controller, **kw):
-        wx.Panel.__init__(self, parent, **kw)
-        self.styles = styles
-        self.SetBackgroundColour(self.styles["BackgroundColour"])
-        self.SetForegroundColour(self.styles["ForegroundColour"])
-        self.controller = controller
-        self.model = self.controller.getModel()
-        self.model.subscribe(self, "msg_new_project", self.onMsgNewProject)
-        self.model.subscribe(self, "msg_open_project", self.onMsgOpenProject)
+        super(ResultPanel, self).__init__(parent, styles, controller, **kw)
         self.model.subscribe(self, "msg_generate_complete", self.onMsgGenerateComplete)
-
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
         self.SetAutoLayout(True)
         self.Bind(wx.EVT_SIZE, self.onResize)
 
-    def cleanUp(self):
-        children = self.GetChildren()
-        for c in children:
-            c.Destroy()
-
-    def construct(self, sizer, project):
+    def construct(self, project):
         self.project = project
-
-        sizer.Clear()
+        self.sizer.Clear(True)
         self.imZmPnl = zoompanel.ZoomPanel(self, self.project, "generatedImage", self.styles)
         self.imZmPnl.Bind(zoompanel.EVT_IMAGE_UPDATED, self.onImageUpdated)
         self.imZmPnl.Bind(zoompanel.EVT_ZOOM_AREA, self.onAreaZoom)
         self.imZmPnl.Bind(zoompanel.EVT_DIVEDOWN, self.onDiveDown)
-        sizer.Add(self.imZmPnl, 1)
-        sizer.Layout()
+        self.sizer.Add(self.imZmPnl, 1)
+        self.sizer.Layout()
 
     def onResize(self, e):
         e.Skip()
         w,h = self.GetSize()
+
         self.Refresh(rect=(0,0,w,h))
 
     def onImageUpdated(self, e):
@@ -298,18 +282,6 @@ class ResultPanel(wx.Panel):
         log.debug(function=self.onDiveDown)
         e.Skip()
         wx.PostEvent(self, e)
-
-    def onMsgNewProject(self, payload):
-        prj = payload["project"]
-        self.cleanUp()
-        self.construct(self.sizer, prj)
-        self.Refresh()
-
-    def onMsgOpenProject(self, payload):
-        prj = payload["project"]
-        self.cleanUp()
-        self.construct(self.sizer, prj)
-        self.Refresh()
 
     def onMsgGenerateComplete(self, payload):
         pass

@@ -86,6 +86,7 @@ class Model(Publisher):
     def load(self, storage):
         storage.read("properties.json", self.loadProperties)
         self.getCurrentProject().loadPlots(storage)
+        self.getCurrentProject().setPath(storage.getPath())
 
     def save(self, storage):
         self.getCurrentProject().setVersion(self.getApplication().getVersion())

@@ -11,7 +11,7 @@ from core.controller import Controller
 import gui.zoompanel as zoompanel
 import gui.dialogs as dlg
 import gui.projectgallery as pgallery
-from gui.projectpanels import ProjectPropertiesPanel, ResultPanel, ProjectExplorerPanel
+from gui.projectpanels import ProjectPropertiesPanel, ResultPanel, ProjectExplorerPanel, StatusBar
 import gui.i18n
         
 RESOURCES="resource"
@@ -141,7 +141,9 @@ class MainWindow(wx.Frame):
 
         self.prjGallery = pgallery.ProjectGalleryFrame(WINDOW_STYLES, self.controller)
 
-        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(self.sizer)
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
 
         self.tabctrl = TabCtrl(self, styles)
         self.configPnl = ProjectPropertiesPanel(self, styles, self.controller, size=(310,800), name="properties")
@@ -150,22 +152,24 @@ class MainWindow(wx.Frame):
         self.tabctrl.addTab(self.explorerPnl, self.getToolBitmap(ID_PROJECT_EXPLORER))
         self.tabctrl.selectTab("properties")
 
-        self.ResultPnl = ResultPanel(self, styles, self.controller, style=wx.SUNKEN_BORDER, size=(1600,1600))
+        self.ResultPnl = ResultPanel(self, styles, self.controller, style=wx.SUNKEN_BORDER)
         self.ResultPnl.Bind(zoompanel.EVT_IMAGE_UPDATED, self.onImageUpdated)
-        self.ResultPnl.Bind(zoompanel.EVT_ZOOM_AREA, self.configPnl.onGenerate)
+        self.ResultPnl.Bind(zoompanel.EVT_ZOOM_AREA, self.onUserGenerate)
         self.ResultPnl.Bind(zoompanel.EVT_DIVEDOWN, self.onDiveDown)
 
-        self.sizer.Add(self.tabctrl, 1)
-        self.sizer.Add(self.ResultPnl, 5)
-        self.SetAutoLayout(True)
+        hbox.Add(self.tabctrl, 1, 0, 0)
+        hbox.Add(self.ResultPnl, 5, wx.EXPAND | wx.ALL, 0)
+        self.sizer.Add(hbox, 1, flag=wx.EXPAND)
+        self.statusBar = StatusBar(self, styles, self.controller, size=(4000,15))
+        self.sizer.Add(self.statusBar, 0, wx.EXPAND | wx.ALL, 0)
+        self.sizer.Layout()
 
         self.constructToolbar()
         self.constructMenu()
-        self.SetSizer(self.sizer)
+
+        self.SetAutoLayout(True)
         self.SetMinSize((800,800))
  
-        self.Show()
-
         self.Bind(event=wx.EVT_CLOSE, handler=self.onUserCloseMainWindow)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserNewMandelbrotProject, id=ID_FILE_NEW_PROJECT_MANDELBROTPROJECT)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserNewJuliaProject, id=ID_FILE_NEW_PROJECT_JULIAPROJECT)
@@ -189,6 +193,9 @@ class MainWindow(wx.Frame):
             self.enable(id, False)
 
         #wx.PostEvent(self, wx.MenuEvent(wx.wxEVT_MENU, ID_FILE_NEW_PROJECT_MANDELBROTPROJECT))
+
+        self.Show()
+
 
     def enable(self, id, enabled):
         try:
@@ -315,7 +322,7 @@ class MainWindow(wx.Frame):
         e.Skip()
 
     def onUserGenerate(self, e):
-        self.configPnl.onGenerate(e)
+        self.statusBar.onGenerate(e)
         e.Skip()
 
     def onUserReset(self, e):
@@ -409,7 +416,7 @@ def versions():
 def start():
     # configure logging
     logging.basicConfig(format='[%(name)s] %(levelname)s:%(message)s', level=logging.DEBUG)
-    log.setLoggerLevel("lib.persistentobject", logging.ERROR)
+    log.setLoggerLevel("lib.persistentobject", logging.INFO)
     log.setLoggerLevel("lib.modelobject", logging.ERROR)
     log.setLoggerLevel("gui.projectgallery", logging.ERROR)
     log.setLoggerLevel("core.filemgmt", logging.ERROR)
