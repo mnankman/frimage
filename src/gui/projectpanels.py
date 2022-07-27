@@ -4,15 +4,67 @@ import wx.lib.progressindicator as progress
 
 from lib import log
 
-from core.model.complex import JuliaProject
+from core.model.complex import JuliaProject, GeneratedSet
 import gui.dynctrl as dynctrl 
 import gui.zoompanel as zoompanel
 import random
         
 RESOURCES="resource"
 
-#TODO: create panel with treeview of a project where all generation steps can be explored and edited (remove)
+class ProjectExplorerPanel(wx.Panel):
+    def __init__(self, parent, styles, controller, **kw):
+        super(ProjectExplorerPanel, self).__init__(parent, **kw)    
+        self.styles = styles
+        self.SetBackgroundColour(styles["BackgroundColour"])
+        self.SetForegroundColour(styles["ForegroundColour"])
+        self.controller = controller
+        self.model = self.controller.getModel()
+        self.model.subscribe(self, "msg_new_project", self.onUpdate)
+        self.model.subscribe(self, "msg_open_project", self.onUpdate)
 
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(self.sizer)
+        self.SetSize(self.GetParent().GetSize())
+        self.sizer.Layout()
+
+    def cleanUp(self):
+        children = self.GetChildren()
+        for c in children:
+            c.Destroy()
+
+    def construct(self, project):
+        log.debug(function=self.construct, args=project.getFullId())
+        self.project = project
+        self.sizer.Clear()
+        self.projectTree = wx.TreeCtrl(self, wx.ID_ANY, wx.DefaultPosition, self.GetSize(), wx.TR_HAS_BUTTONS)
+        self.projectTree.SetBackgroundColour(self.styles["BackgroundColour"])
+        self.projectTree.SetForegroundColour(self.styles["ForegroundColour"])
+        rootset = self.project.getRootSet()
+        root = self.projectTree.AddRoot(rootset.getName())
+        self.constructTree(root, rootset)
+        self.projectTree.ExpandAll()
+        self.sizer.Add(self.projectTree, 100)
+        self.sizer.Layout()
+
+    def constructTree(self, parentItem, genset):
+        log.debug(function=self.constructTree, args=(parentItem, genset.getFullId()))
+        for gs in genset.getGeneratedSets():
+            item = self.projectTree.AppendItem(parentItem, gs.getName())
+            self.constructTree(item, gs)
+
+    def onUpdate(self, payload):
+        if "project" in payload.keys():            
+            prj = payload["project"]
+        elif "object" in payload.keys():
+            prj = payload["object"]
+        else:
+            return
+        self.construct(prj)
+        prj.subscribe(self, "msg_object_modified", self.onUpdate)
+        self.Refresh()
+
+    
+ 
 class ProjectPropertiesPanel(wx.Panel):
     def __init__(self, parent, styles, controller, **kw):
         super(ProjectPropertiesPanel, self).__init__(parent, **kw)    
@@ -37,6 +89,8 @@ class ProjectPropertiesPanel(wx.Panel):
         btnNewJulia.Bind(wx.EVT_BUTTON, self.onNewJuliaProject)
         self.sizer.AddSpacer(40)
         self.sizer.Add(gridsizer, 1, flag=wx.ALIGN_CENTER_HORIZONTAL)
+        self.SetAutoLayout(True)
+        self.Bind(wx.EVT_SIZE, self.onResize)
         self.sizer.Layout()
 
     def cleanUp(self):
@@ -132,6 +186,11 @@ class ProjectPropertiesPanel(wx.Panel):
 
         self.sizer.Add(gridsizer4, 1)
         self.sizer.Layout()
+
+    def onResize(self, e):
+        e.Skip()
+        w,h = self.GetSize()
+        self.Refresh(rect=(0,0,w,h))
 
     def onMsgNewProject(self, payload):
         prj = payload["project"]
