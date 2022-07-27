@@ -32,6 +32,13 @@ class PersistentObject:
             for nm in names:
                 if nm in self.__dict__:
                     setattr(self, nm, initValue)     
+
+    def getPersistentBaseClasses(self, cls):
+        classList=[]
+        for base in cls.__bases__:
+            classList.extend(self.getPersistentBaseClasses(base))
+            classList.append(base)
+        return classList
     
     def getPersistentAttributes(self):
         """
@@ -45,7 +52,7 @@ class PersistentObject:
             className, attrName, initValue = pa
             names = ["_"+className+"__"+attrName]
             # construct a list of possible qualified names (class.attribute) for the attributes
-            for base in self.__class__.__bases__:
+            for base in self.getPersistentBaseClasses(self.__class__):
                 names.append("_"+base.__name__+"__"+attrName)
             # try each of these names
             for nm in names:
@@ -55,7 +62,7 @@ class PersistentObject:
                     # put (a copy of) the found value in result
                     result[attrName] = v.copy() if hasattr(type(v), "copy") else v
                     # if the value is a list, dict, etc, than store a copy of it
-        #log.trace("\n\n", type(self), ".getPersistentAttributes() -->", result, "\n\n")
+        #log.trace("\n\n", function=self.getPersistentAttributes, returns=result, var=("names", names))
         return result
         
     def getType(self):
