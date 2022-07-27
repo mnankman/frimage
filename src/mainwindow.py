@@ -301,14 +301,14 @@ class MainWindow(wx.Frame):
 
     def onProjectMakeRoot(self, e):
         log.debug(function=self.onProjectMakeRoot)
-        self.controller.clearProjectModifications()
-        self.controller.makeRoot()
+        if dlg.message(_("This will make this area the root of the project and remove everything above this point. Are you sure?"), wx.YES_NO) == wx.ID_YES:
+            self.controller.makeRoot()
         e.Skip()
 
     def onProjectDeleteBranch(self, e):
         log.debug(function=self.onProjectDeleteBranch)
-        self.controller.clearProjectModifications()
-        self.controller.remove()
+        if dlg.message(_("This will remove this area and all area's after it. Are you sure?"), wx.YES_NO) == wx.ID_YES:
+            self.controller.remove()
         e.Skip()
 
     def onDiveDown(self, e):
