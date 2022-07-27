@@ -177,7 +177,7 @@ class ProjectPropertiesPanel(wx.Panel):
         e.Skip()
 
     def onNewJuliaProject(self, e):
-        self.controller.newMandelbrotProject("julia")
+        self.controller.newJuliaProject("julia")
         e.Skip()
 
     def onRandomCxy(self, e):
