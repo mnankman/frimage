@@ -8,12 +8,13 @@ import core.fgen
 from .project import Project
 
 class Area(ModelObject):
-    def __init__(self, project):
+    def __init__(self, project, area=None):
         super().__init__(project)
         self.__xa = None
         self.__xb = None
         self.__ya = None
         self.__yb = None
+        if area: self.setAll(area)
         self.persist("xa", None)
         self.persist("xb", None)
         self.persist("ya", None)
@@ -108,9 +109,9 @@ class Cxy(ModelObject):
         return s
 
 class GeneratedSet(ModelObject):
-    def __init__(self, parent, name):
+    def __init__(self, parent, name, area=None):
         super().__init__(parent)
-        self.area = Area(self)
+        self.area = Area(self, area)
         self.__name = name
         self.__generatedPlot__ = None
         self.__maxPlotValue = None
@@ -118,6 +119,13 @@ class GeneratedSet(ModelObject):
         self.__generatedSets__ = []
         self.persist("name")
         self.persist("maxPlotValue")
+
+    def clear(self):
+        self.__generatedSets__ = []
+
+    def remove(self, genset):
+        self.__generatedSets__.remove(genset)
+        self.setModified()
 
     def setName(self, name):
         self.__name = name
@@ -226,6 +234,8 @@ class GeneratedSet(ModelObject):
 #TODO: implement base class ComplexProject where MandelbrotProject and JuliaProject inherit from
 
 class MandelbrotProject(Project):
+    DEFAULT_AREA = (-2.0,1.0,-1.5,1.5)
+    DEFAULT_SIZE = (400,400)
     def __init__(self):
         super().__init__()
         self.rootSet = GeneratedSet(self, "root")
@@ -236,8 +246,8 @@ class MandelbrotProject(Project):
         self.init()
 
     def init(self):
-        self.setSize((400,400))
-        self.setArea((-2.0,1.0,-1.5,1.5))
+        self.setSize(MandelbrotProject.DEFAULT_SIZE)
+        self.setArea(MandelbrotProject.DEFAULT_AREA)
         self.setMaxIt(256)
 
     def setMaxIt(self, maxIt):
@@ -303,11 +313,37 @@ class MandelbrotProject(Project):
             self.currentSet = genSet
             self.setModified()
 
+    def home(self):
+        log.debug(function=self.home)
+        self.currentSet = self.getRootSet()
+        self.setModified()
+
     def up(self):
         parent = self.currentSet.getParent()
         if parent != None and isinstance(parent, GeneratedSet):
             log.debug(function=self.up)
             self.currentSet = parent
+            self.setModified()
+
+    def remove(self):
+        current = self.getCurrentSet()
+        root = self.getRootSet()
+        if current == root:
+            self.rootSet = GeneratedSet(self, "root", MandelbrotProject.DEFAULT_AREA)
+            self.currentSet = self.rootSet
+        else:
+            self.currentSet = current.getParent()
+        self.currentSet.remove(current)
+        del current
+        self.setModified()
+
+    def makeRoot(self):
+        current = self.getCurrentSet()
+        root = self.getRootSet()
+        if current != root:
+            current.setParent(self)
+            self.rootSet = current
+            del root
             self.setModified()
 
     def setProjectSourceImage(self, path):

@@ -4,13 +4,13 @@ import json
 
 #project
 from lib import log
-from core.model.model import Model, AbstractModel 
+from core.model.model import Model 
 import core.filemgmt as filemgmt
 
 class Controller:
     def __init__(self, model):
         assert model
-        assert isinstance(model, AbstractModel)
+        assert isinstance(model, Model)
         self.model = model
         self.ps = filemgmt.ProjectStorage()
 
@@ -76,16 +76,17 @@ class Controller:
         self.ps.create()
         self.model.load(self.ps)
 
+    def home(self):
+        self.model.home()
+
     def up(self):
         self.model.up()
 
     def down(self, genSet):
         self.model.down(genSet)
         
-    #TODO add functionality for removing a subset
-    def remove(self, genset):
-        pass
+    def remove(self):
+        self.model.remove()
 
-    #TODO add functionality for saving a generated subset as a new project
-    def saveAsProject(self, genset):
-        pass
+    def makeRoot(self):
+        self.model.makeRoot()

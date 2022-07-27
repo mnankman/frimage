@@ -23,25 +23,7 @@ class Application(ModelObject):
     def getStorageDir(self):
         return self.__storageDir__
 
-class AbstractModel():
-    def __init__(self): pass
-    def getApplication(self): pass    
-    def getApplicationTitle(self): pass    
-    def newProject(self, projectType, name=None): pass
-    async def generate(self, progressHandler=None, **kw): pass
-    async def preview(self, **kw): pass
-    def selectProjectSourceImage(self, path): pass
-    def getGeneratedImage(self): pass
-    def getProjectSourceImage(self): pass
-    def getCurrentProject(self): pass
-    def setAttribute(self, attrName, attrValue): pass
-    def load(self, storage): pass
-    def save(self, storage): pass
-    def clearProjectModifications(self): pass
-    def up(self): pass
-    def down(self, genSet): pass
-    
-class Model(AbstractModel, Publisher):
+class Model(Publisher):
     PROJECT_TYPE_JULIA = 1
     PROJECT_TYPE_MANDELBROT = 2
     VALID_PROJECT_TYPES = [PROJECT_TYPE_JULIA, PROJECT_TYPE_MANDELBROT]
@@ -136,11 +118,19 @@ class Model(AbstractModel, Publisher):
     def clearProjectModifications(self):
         self.getCurrentProject().clearModified(True)
 
+    def home(self):
+        self.getCurrentProject().home()
+
     def up(self):
         self.getCurrentProject().up()
 
     def down(self, genSet):
         self.getCurrentProject().down(genSet)
 
+    def remove(self):
+        self.getCurrentProject().remove()
+
+    def makeRoot(self):
+        self.getCurrentProject().makeRoot()
     
 

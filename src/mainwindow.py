@@ -32,7 +32,10 @@ ID_PROJECT_RESET=303
 ID_PROJECT_SELECT_ZOOM_MODE=304
 ID_PROJECT_SELECT_FINISH_MODE=305
 ID_PROJECT_UP=306
-ID_PROJECT_FIT_IMAGE=307
+ID_PROJECT_HOME=307
+ID_PROJECT_MAKE_ROOT=308
+ID_PROJECT_DELETE_BRANCH=309
+ID_PROJECT_FIT_IMAGE=310
 
 ID_DEBUG_SHOWINSPECTIONTOOL=601
 
@@ -50,6 +53,9 @@ ICONS = {
     ID_PROJECT_SELECT_ZOOM_MODE: RESOURCES+"/picture_in_picture.png",
     ID_PROJECT_SELECT_FINISH_MODE: RESOURCES+"/image.png",
     ID_PROJECT_UP: RESOURCES+"/north_west.png",
+    ID_PROJECT_HOME: RESOURCES+"/home.png",
+    ID_PROJECT_MAKE_ROOT: RESOURCES+"/upload.png",
+    ID_PROJECT_DELETE_BRANCH: RESOURCES+"/delete.png",
 }
 
 WINDOW_STYLES = {
@@ -111,6 +117,9 @@ class MainWindow(wx.Frame):
         self.Bind(event=wx.EVT_MENU, handler=self.onUserSelectZoomMode, id=ID_PROJECT_SELECT_ZOOM_MODE)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserSelectFinishMode, id=ID_PROJECT_SELECT_FINISH_MODE)
         self.Bind(event=wx.EVT_MENU, handler=self.onProjectUp, id=ID_PROJECT_UP)
+        self.Bind(event=wx.EVT_MENU, handler=self.onProjectHome, id=ID_PROJECT_HOME)
+        self.Bind(event=wx.EVT_MENU, handler=self.onProjectMakeRoot, id=ID_PROJECT_MAKE_ROOT)
+        self.Bind(event=wx.EVT_MENU, handler=self.onProjectDeleteBranch, id=ID_PROJECT_DELETE_BRANCH)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserProjectFitImage, id=ID_PROJECT_FIT_IMAGE)
 
         for id in ID_GROUP_PROJECTLOADED:
@@ -151,8 +160,11 @@ class MainWindow(wx.Frame):
         self.addTool(self.toolBar, ID_PROJECT_FIT_IMAGE, "Fit image to frame size")
         self.toolBar.AddSeparator()
         self.addTool(self.toolBar, ID_PROJECT_SELECT_ZOOM_MODE, "Zoom mode")
-        self.addTool(self.toolBar, ID_PROJECT_SELECT_FINISH_MODE, "Zoom mode")
-        self.addTool(self.toolBar, ID_PROJECT_UP, "Zoom mode")
+        self.addTool(self.toolBar, ID_PROJECT_SELECT_FINISH_MODE, "Finish mode")
+        self.addTool(self.toolBar, ID_PROJECT_HOME, "Go to home area")
+        self.addTool(self.toolBar, ID_PROJECT_UP, "Go to parent area")
+        self.addTool(self.toolBar, ID_PROJECT_MAKE_ROOT, "Make current area root")
+        self.addTool(self.toolBar, ID_PROJECT_DELETE_BRANCH, "Remove the current area and all area's behind it")
         
         self.toolBar.Realize()
 
@@ -181,7 +193,10 @@ class MainWindow(wx.Frame):
         projectMenu.Append(ID_PROJECT_FIT_IMAGE, "Scale image to f&it", "Scale image to fit")
         projectMenu.Append(ID_PROJECT_SELECT_ZOOM_MODE, "Select &Zoom Mode", "Select Zoom Mode")
         projectMenu.Append(ID_PROJECT_SELECT_FINISH_MODE, "Select &Finish Mode", "Select Finish Mode")
+        projectMenu.Append(ID_PROJECT_HOME, "Go &home (to top view)", "Go to top view")
         projectMenu.Append(ID_PROJECT_UP, "Go &up (to parent view)", "Go to parent view")
+        projectMenu.Append(ID_PROJECT_MAKE_ROOT, "Make r&oot", "Make current area the new root")
+        projectMenu.Append(ID_PROJECT_DELETE_BRANCH, "&Delete this branch", "Delete this branch")
         self.menuBar.Append(fileMenu, "&File")
         self.menuBar.Append(projectMenu, "&Project")
         self.menuBar.Append(debugMenu, "&Debug")
@@ -276,6 +291,24 @@ class MainWindow(wx.Frame):
         log.debug(function=self.onProjectUp)
         self.controller.clearProjectModifications()
         self.controller.up()
+        e.Skip()
+
+    def onProjectHome(self, e):
+        log.debug(function=self.onProjectHome)
+        self.controller.clearProjectModifications()
+        self.controller.home()
+        e.Skip()
+
+    def onProjectMakeRoot(self, e):
+        log.debug(function=self.onProjectMakeRoot)
+        self.controller.clearProjectModifications()
+        self.controller.makeRoot()
+        e.Skip()
+
+    def onProjectDeleteBranch(self, e):
+        log.debug(function=self.onProjectDeleteBranch)
+        self.controller.clearProjectModifications()
+        self.controller.remove()
         e.Skip()
 
     def onDiveDown(self, e):

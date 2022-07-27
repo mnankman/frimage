@@ -31,6 +31,9 @@ class ModelObject(PersistentObject, Publisher):
     def __del__(self):
         #Publisher.__del__(self)
         #log.trace(function=self.__del__, args=self.getFullId())
+        parent = self.getParent()
+        if parent:
+            parent.removeChild(self)
         self._reset()
 
     def _reset(self):
@@ -54,6 +57,12 @@ class ModelObject(PersistentObject, Publisher):
 
     def getParent(self):
         return self.__parent__
+
+    def setParent(self, parent):
+        assert isinstance(parent, ModelObject)
+        self.__parent__.removeChild(self)
+        self.__parent__ = parent
+        parent.addChild(self)
     
     def isValidChild(self, child):
         valid = False
@@ -83,6 +92,14 @@ class ModelObject(PersistentObject, Publisher):
         self.dispatch("msg_new_child", {"object": self, "child": childObject})
         childObject.subscribe(self, "msg_object_modified", self.onMsgChildObjectModified)
         self.setModified()
+
+    def removeChild(self, childObject):
+        log.debug(function=self.removeChild, args=childObject.getFullId())
+        assert isinstance(childObject, ModelObject)
+        if childObject.getId() in self.getChildren():
+            self.__children__.pop(childObject.getId())
+            childObject.unsubscribe(self.onMsgChildObjectModified, "msg_object_modified")
+            self.setModified()
 
     def onMsgChildObjectModified(self, payload):
         log.debug(function=self.onMsgChildObjectModified, args=payload["object"].getFullId())
