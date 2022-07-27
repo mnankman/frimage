@@ -33,10 +33,10 @@ class PersistentObject:
                 if nm in self.__dict__:
                     setattr(self, nm, initValue)     
 
-    def getPersistentBaseClasses(self, cls):
+    def getBaseClasses(self, cls):
         classList=[]
         for base in cls.__bases__:
-            classList.extend(self.getPersistentBaseClasses(base))
+            classList.extend(self.getBaseClasses(base))
             classList.append(base)
         return classList
     
@@ -52,7 +52,7 @@ class PersistentObject:
             className, attrName, initValue = pa
             names = ["_"+className+"__"+attrName]
             # construct a list of possible qualified names (class.attribute) for the attributes
-            for base in self.getPersistentBaseClasses(self.__class__):
+            for base in self.getBaseClasses(self.__class__):
                 names.append("_"+base.__name__+"__"+attrName)
             # try each of these names
             for nm in names:
