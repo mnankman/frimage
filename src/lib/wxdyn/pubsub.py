@@ -1,6 +1,6 @@
 import asyncio
 import functools
-from lib import log
+import lib.wxdyn.log as  log
 
 class MessageQueue:
     MAXQUEUESIZE = 20

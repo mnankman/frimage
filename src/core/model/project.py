@@ -1,4 +1,4 @@
-from lib import log
+import lib.wxdyn.log as  log
 import lib.wxdyn as wxd
 from lib.imgbox import ImageBox
 import core.fgen

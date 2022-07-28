@@ -1,6 +1,6 @@
 from gui import projectgallery
 import os
-from lib import log
+import lib.wxdyn.log as  log
 
 def makeDirs(dir):
     if not os.path.exists(dir):

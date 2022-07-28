@@ -4,7 +4,7 @@ from wx.lib.scrolledpanel import ScrolledPanel
 import json
 import os
 
-from lib import log
+import lib.wxdyn.log as  log
 import lib.wxdyn as wxd
 import core.filemgmt as filemgmt
 

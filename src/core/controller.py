@@ -3,8 +3,8 @@ import asyncio
 import json
 
 #project
-from lib import log
-from core.model.model import Model 
+import lib.wxdyn.log as  log
+from core.model import Model
 import core.filemgmt as filemgmt
 
 class Controller:

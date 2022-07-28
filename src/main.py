@@ -3,7 +3,7 @@ import wx
 from wxasync import WxAsyncApp
 import logging
 
-from lib import log
+import lib.wxdyn.log as  log
 from core.model.model import Model
 from core.controller import Controller
 import gui.dialogs as dlg

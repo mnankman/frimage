@@ -1,4 +1,5 @@
-from lib import log, util
+import lib.wxdyn.log as  log
+from lib.wxdyn import util
    
 class PersistentObject:
     """

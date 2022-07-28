@@ -1,9 +1,9 @@
 import wx
 import wx.lib.newevent as NE
-from core.model.project import Project 
-import lib.wxdyn as wxd
 from PIL import Image
-from lib import log
+
+import lib.wxdyn.log as  log
+from core.model import Project 
 import lib.wxdyn as wxd
 
 ImageUpdatedEvent, EVT_IMAGE_UPDATED = NE.NewEvent()

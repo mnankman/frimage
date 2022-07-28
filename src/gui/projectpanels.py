@@ -2,9 +2,9 @@ import wx
 from wxasync import StartCoroutine
 import wx.lib.progressindicator as progress
 
-from lib import log
+import lib.wxdyn.log as  log
 
-from core.model.complex import JuliaProject, GeneratedSet
+from core.model import JuliaProject
 import lib.wxdyn.dynctrl as dynctrl 
 import gui.zoompanel as zoompanel
 import random

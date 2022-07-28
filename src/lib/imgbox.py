@@ -1,6 +1,6 @@
 import math
 from PIL import Image, ImageDraw
-from lib import log
+import lib.wxdyn.log as  log
 
 class ImageBox:
     ORIENTATION_HORIZONTAL = 0

@@ -1,6 +1,6 @@
 import imp
 import wx
-from lib import log
+import lib.wxdyn.log as  log
 from gui import i18n
 
 #TODO: make an About-dialog 

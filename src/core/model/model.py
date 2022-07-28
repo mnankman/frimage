@@ -2,7 +2,7 @@
 import json
 
 #local
-from lib import log
+import lib.wxdyn.log as  log
 import lib.wxdyn as wxd
 from .complex import JuliaProject, MandelbrotProject
 

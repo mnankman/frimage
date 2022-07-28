@@ -4,7 +4,7 @@ src/core/model/__pycache__/
 src/gui/__pycache__/
 src/lib/__pycache__/
 src/lib/wxdyn/__pycache__/
-src/lib/ext/__pycache__/
+src/lib/wxdyn/log/__pycache__/
 resource/*.jpg
 savedprojects/
 photolibrary/

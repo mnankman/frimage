@@ -1,7 +1,7 @@
 import wx
 from .modelobject import ModelObject
 from PIL import Image
-from lib import log
+import lib.wxdyn.log as  log
 
 class DynamicCtrl:
     def __init__(self, modelObject, attributeName):

@@ -2,7 +2,7 @@
 import numpy as np
 
 #project
-from lib import log
+import lib.wxdyn.log as  log
 import lib.wxdyn as wxd
 import core.fgen
 from .project import Project

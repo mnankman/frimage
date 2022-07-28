@@ -4,15 +4,15 @@ import wx
 from wxasync import WxAsyncApp
 from wx.lib.inspection import InspectionTool
 
-from lib import log
+import lib.wxdyn.log as log
 
-from core.model.model import Model
+from core.model import Model
 from core.controller import Controller
-import gui.zoompanel as zoompanel
 import gui.dialogs as dlg
-import gui.projectgallery as pgallery
-from gui.projectpanels import ProjectPropertiesPanel, ResultPanel, ProjectExplorerPanel, StatusBar
-import gui.i18n
+import gui.zoompanel as zoom
+from gui import ProjectPropertiesPanel, ResultPanel, ProjectExplorerPanel, StatusBar
+from gui import ProjectGalleryFrame
+from gui import i18n
         
 RESOURCES="resource"
 
@@ -139,7 +139,7 @@ class MainWindow(wx.Frame):
         self.model.subscribe(self, "msg_project_saved", self.onMsgProjectSaved)
         self.model.subscribe(self, "msg_generate_complete", self.onMsgGenerateComplete)
 
-        self.prjGallery = pgallery.ProjectGalleryFrame(WINDOW_STYLES, self.controller)
+        self.prjGallery = ProjectGalleryFrame(WINDOW_STYLES, self.controller)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
@@ -153,9 +153,9 @@ class MainWindow(wx.Frame):
         self.tabctrl.selectTab("properties")
 
         self.ResultPnl = ResultPanel(self, styles, self.controller, style=wx.SUNKEN_BORDER)
-        self.ResultPnl.Bind(zoompanel.EVT_IMAGE_UPDATED, self.onImageUpdated)
-        self.ResultPnl.Bind(zoompanel.EVT_ZOOM_AREA, self.onUserGenerate)
-        self.ResultPnl.Bind(zoompanel.EVT_DIVEDOWN, self.onDiveDown)
+        self.ResultPnl.Bind(zoom.EVT_IMAGE_UPDATED, self.onImageUpdated)
+        self.ResultPnl.Bind(zoom.EVT_ZOOM_AREA, self.onUserGenerate)
+        self.ResultPnl.Bind(zoom.EVT_DIVEDOWN, self.onDiveDown)
 
         hbox.Add(self.tabctrl, 1, 0, 0)
         hbox.Add(self.ResultPnl, 5, wx.EXPAND | wx.ALL, 0)

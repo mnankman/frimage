@@ -2,7 +2,7 @@ import math
 from PIL import Image
 import random
 import numpy as np
-from lib import log
+import lib.wxdyn.log as  log
             
 def gaussian(x, a, b, c, d=0):
     return a * math.exp(-(x - b)**2 / (2 * c**2)) + d

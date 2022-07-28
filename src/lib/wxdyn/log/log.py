@@ -1,7 +1,7 @@
 import logging
 import inspect
-from lib import util
-from lib.ext.colored import colored
+from lib.wxdyn import util
+from .colored import colored
 
 class ColorLog(object):
 
