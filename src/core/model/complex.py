@@ -3,11 +3,11 @@ import numpy as np
 
 #project
 from lib import log
-from lib.modelobject import ModelObject
+import lib.wxdyn as wxd
 import core.fgen
 from .project import Project
 
-class Area(ModelObject):
+class Area(wxd.ModelObject):
     def __init__(self, project, area=None):
         super().__init__(project)
         self.__xa = None
@@ -78,7 +78,7 @@ class Area(ModelObject):
         s =  self.getId() + ": " + str((self.__xa, self.__xb, self.__ya, self.__yb))
         return s
 
-class Cxy(ModelObject):
+class Cxy(wxd.ModelObject):
     def __init__(self, project, cxy=None):
         super().__init__(project)
         self.__cx = None
@@ -109,7 +109,7 @@ class Cxy(ModelObject):
         s =  self.getId() + ": " + str((self.__cx, self.__cy))
         return s
 
-class GeneratedSet(ModelObject):
+class GeneratedSet(wxd.ModelObject):
     def __init__(self, parent, name, area=None):
         super().__init__(parent)
         self.area = Area(self, area)

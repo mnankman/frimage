@@ -1,10 +1,10 @@
 from lib import log
-from lib.modelobject import ModelObject
+import lib.wxdyn as wxd
 from lib.imgbox import ImageBox
 import core.fgen
 from .projectsource import ProjectSource
 
-class Project(ModelObject):
+class Project(wxd.ModelObject):
     def __init__(self):
         super().__init__()
         self.__name = None

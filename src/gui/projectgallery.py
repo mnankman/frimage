@@ -5,8 +5,7 @@ import json
 import os
 
 from lib import log
-from lib.modelobject import ModelObject
-import gui.dynctrl as dynctrl 
+import lib.wxdyn as wxd
 import core.filemgmt as filemgmt
 
 RESOURCES="resource"

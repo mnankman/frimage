@@ -1,5 +1,5 @@
 import wx
-from lib.modelobject import ModelObject
+from .modelobject import ModelObject
 from PIL import Image
 from lib import log
 

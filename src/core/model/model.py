@@ -3,11 +3,10 @@ import json
 
 #local
 from lib import log
-from lib.pubsub import Publisher
-from lib.modelobject import ModelObject
+import lib.wxdyn as wxd
 from .complex import JuliaProject, MandelbrotProject
 
-class Application(ModelObject):
+class Application(wxd.ModelObject):
     def __init__(self):
         super().__init__()
         self.__name__ = "FriMage Studio"
@@ -23,7 +22,7 @@ class Application(ModelObject):
     def getStorageDir(self):
         return self.__storageDir__
 
-class Model(Publisher):
+class Model(wxd.Publisher):
     PROJECT_TYPE_JULIA = 1
     PROJECT_TYPE_MANDELBROT = 2
     VALID_PROJECT_TYPES = [PROJECT_TYPE_JULIA, PROJECT_TYPE_MANDELBROT]
@@ -31,7 +30,7 @@ class Model(Publisher):
     def __init__(self):
         self.__application__ = Application()
         self.__currentProject__ = None
-        Publisher.__init__(self, Model.EVENTS)
+        wxd.Publisher.__init__(self, Model.EVENTS)
 
     def getApplication(self):
         return self.__application__

@@ -1,11 +1,10 @@
 import wx
 import wx.lib.newevent as NE
 from core.model.project import Project 
-from lib.modelobject import ModelObject
-
+import lib.wxdyn as wxd
 from PIL import Image
 from lib import log
-import gui.dynctrl as dynctrl
+import lib.wxdyn as wxd
 
 ImageUpdatedEvent, EVT_IMAGE_UPDATED = NE.NewEvent()
 ZoomAreaEvent, EVT_ZOOM_AREA = NE.NewEvent()
@@ -17,9 +16,9 @@ MODE_ZOOM = 0
 MODE_FINISH = 1
 VALID_MODES = [MODE_ZOOM, MODE_FINISH]
 
-class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
+class ZoomPanel(wxd.DynamicCtrl, wx.Panel):
     def __init__(self, parent, modelObject, attributeName, styles, **kw):
-        dynctrl.DynamicCtrl.__init__(self, modelObject, attributeName)
+        wxd.DynamicCtrl.__init__(self, modelObject, attributeName)
         wx.Panel.__init__(self, parent, **kw)
         self.__mode__ = MODE_ZOOM
         self.__areaRect__ = self.modelObject.getArea().getRect()
@@ -128,7 +127,7 @@ class ZoomPanel(dynctrl.DynamicCtrl, wx.Panel):
     def onModelObjectChange(self, payload):
         #if "modified" in payload: return
         obj = payload["object"]
-        assert isinstance(obj, ModelObject)
+        assert isinstance(obj, wxd.ModelObject)
         log.debug(function=self.onModelObjectChange, args=obj.getFullId())
         if "modified" in payload:
             mods = obj.getModificationsFromPayload(payload)

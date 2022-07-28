@@ -5,7 +5,7 @@ import wx.lib.progressindicator as progress
 from lib import log
 
 from core.model.complex import JuliaProject, GeneratedSet
-import gui.dynctrl as dynctrl 
+import lib.wxdyn.dynctrl as dynctrl 
 import gui.zoompanel as zoompanel
 import random
         

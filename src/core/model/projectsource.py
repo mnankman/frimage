@@ -3,10 +3,10 @@ from PIL import Image
 
 #project
 from lib import log
-from lib.modelobject import ModelObject
+import lib.wxdyn as wxd
 import core.fgen
 
-class ProjectSource(ModelObject):
+class ProjectSource(wxd.ModelObject):
     def __init__(self, project, path=None):
         super().__init__(project)
         self.__path = path
