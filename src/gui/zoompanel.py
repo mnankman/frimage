@@ -217,15 +217,12 @@ class ZoomPanel(wxd.DynamicCtrl, wx.Panel):
         return (rx, ry, rw, rh)
 
     # calculates largest fit while maintaining aspect ratio of the image
-    # FIXME: does not seem to work correctly when cw<>ch
     def calcImageFitSize(self, pilImg, targetSize):
-        tw,th = targetSize          
-        cw,ch = pilImg.size
-        l = cw if cw>ch else ch         # longest edge
-        f = tw/l if tw<th else th/l     # resize factor
-        s = (int(cw*f), int(ch*f))
-        #log.debug(function=self.calcImageFitSize, args=(pilImg.size, targetSize), returns=(l,f,s))
-        return s
+        tw,th = targetSize
+        sw,sh = pilImg.size
+        tr = tw/th
+        sr = sw/sh
+        return (tw, int(tw/sr)) if sr>tr else (int(th*sr), th)
 
 # ------- METHODS FOR DRAWING THE CONTENTS -------
 
