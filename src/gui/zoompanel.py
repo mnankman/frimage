@@ -17,7 +17,7 @@ MODE_FINISH = 1
 VALID_MODES = [MODE_ZOOM, MODE_FINISH]
 
 class ZoomPanel(wxd.DynamicCtrl, wx.Panel):
-    def __init__(self, parent, modelObject, attributeName, styles, **kw):
+    def __init__(self, parent, modelObject, attributeName, **kw):
         wxd.DynamicCtrl.__init__(self, modelObject, attributeName)
         wx.Panel.__init__(self, parent, **kw)
         self.__mode__ = MODE_ZOOM
@@ -29,8 +29,6 @@ class ZoomPanel(wxd.DynamicCtrl, wx.Panel):
         self.__mouseOver__ = False
         self.__genSetUnderMouseCursor__ = None
         self.__SourceImageStamp__ = None
-        self.SetBackgroundColour(styles["BackgroundColour"])
-        self.SetForegroundColour(styles["ForegroundColour"])
         self.setImage(modelObject.getAttribute(self.attributeName))
         self.Bind(wx.EVT_PAINT,self.onPaint)
         self.Bind(wx.EVT_SIZE, self.onResize)
@@ -231,6 +229,7 @@ class ZoomPanel(wxd.DynamicCtrl, wx.Panel):
         im = self.getImage()
         self.__imgFitSize__ = self.calcImageFitSize(im, self.GetSize())
         dc = wx.PaintDC(self)
+        self.paintStyler.select("ZoomPanel:normal", dc)
         imr = im.resize(self.__imgFitSize__) if self.__scaleToFit__ else im.copy()
         ix,iy = self.getImageFitPos()
         dc.DrawBitmap(self.pilImageToBitmap(imr), ix, iy)
@@ -246,16 +245,14 @@ class ZoomPanel(wxd.DynamicCtrl, wx.Panel):
                 self.drawSourceImage(dc)
 
     def drawImageSizeTxt(self, dc):
-        dc.SetPen(wx.Pen("#ffffff"))
-        dc.SetBrush(wx.Brush("#0000FF", style=wx.BRUSHSTYLE_SOLID))
+        self.paintStyler.select("ZoomPanel:normal", dc)
         ix,iy,iw,ih = self.getImageFitRect()
         txt = str(self.getImageFitSize())
         tw,th = dc.GetTextExtent(txt)
         dc.DrawText(txt, ix+iw-tw, iy+ih-th)
 
     def drawZoomRectTxt(self, dc):
-        dc.SetPen(wx.Pen("#ffffff"))
-        dc.SetBrush(wx.Brush("#0000FF", style=wx.BRUSHSTYLE_SOLID))
+        self.paintStyler.select("ZoomPanel:normal", dc)
         ix,iy,iw,ih = self.getImageFitRect()
         rx,ry,rw,rh = self.__zoomRect__
         txt = str((int(rx),int(ry),int(rx+rw),int(ry+rh)))
@@ -263,7 +260,7 @@ class ZoomPanel(wxd.DynamicCtrl, wx.Panel):
         dc.DrawText(txt, ix, iy+ih-th)
 
     def drawZoomRect(self, dc):
-        dc.SetPen(wx.Pen("#ffffff"))
+        self.paintStyler.select("ZoomPanel:normal", dc)
         dc.SetBrush(wx.Brush("#000000", style=wx.BRUSHSTYLE_TRANSPARENT))
         rx,ry,rw,rh = self.__zoomRect__
         dc.DrawRectangle(rx, ry, rw, rh)
@@ -272,6 +269,7 @@ class ZoomPanel(wxd.DynamicCtrl, wx.Panel):
         dc.DrawText(txt, rx+rw-tw-2, ry+rh-th-2)
 
     def drawGenerationSetAreas(self, dc):
+        self.paintStyler.select("ZoomPanel:normal", dc)
         dc.SetBrush(wx.Brush("#000000", style=wx.BRUSHSTYLE_TRANSPARENT))
         sets = self.modelObject.getCurrentSet().getGeneratedSets()
         for s in sets:
@@ -287,7 +285,7 @@ class ZoomPanel(wxd.DynamicCtrl, wx.Panel):
             dc.DrawText(txt, rx+rw-tw-2, ry+rh-th-2)
 
     def drawSourceImage(self, dc):
-        dc.SetPen(wx.Pen("#ffffff"))
+        self.paintStyler.select("ZoomPanel:normal", dc)
         dc.SetBrush(wx.Brush("#000000", style=wx.BRUSHSTYLE_TRANSPARENT))
         rx,ry,rw,rh = self.__zoomRect__
         im = self.modelObject.getProjectSource().getSourceImage()

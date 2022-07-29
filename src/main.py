@@ -1,5 +1,5 @@
 import asyncio
-import wx
+from wx import *
 from wxasync import WxAsyncApp
 
 from core.model.model import Model

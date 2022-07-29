@@ -16,6 +16,7 @@ import gui.zoompanel as zoom
 from gui import ProjectPropertiesPanel, ResultPanel, ProjectExplorerPanel, StatusBar
 from gui import ProjectGalleryFrame
 from gui import i18n
+from gui import styles
         
 RESOURCES="resource"
 
@@ -74,9 +75,9 @@ WINDOW_STYLES = {
 class MainWindow(wx.Frame):
     def __init__(self, styles, controller):
         super().__init__(parent=None, title='Frimage Studio', size=(1200,900))
-        self.SetBackgroundColour(styles["BackgroundColour"])
-        self.SetForegroundColour(styles["ForegroundColour"])
-
+        self.styler = wxdyn.WindowStyler()
+        self.styler.select("Anything:normal", self)
+        
         iconFile = RESOURCES+"/icon.png"
         icon = wx.Icon(iconFile)
         self.SetIcon(icon)
@@ -96,9 +97,9 @@ class MainWindow(wx.Frame):
         self.SetSizer(self.sizer)
         hbox = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.configPnl = ProjectPropertiesPanel(self, styles, self.controller, size=(310,2000), name="properties")
+        self.configPnl = ProjectPropertiesPanel(self, self.controller, size=(310,2000), name="properties")
         self.configPnl.SetMaxSize((310,2000))
-        self.explorerPnl = ProjectExplorerPanel(self, styles, self.controller, size=(310,2000), name="explorer")
+        self.explorerPnl = ProjectExplorerPanel(self, self.controller, size=(310,2000), name="explorer")
         self.explorerPnl.SetMaxSize((310,2000))
         self.tabctrl = wxdyn.TabCtrl(self)
         self.tabctrl.SetForegroundColour(styles["ForegroundColour"])
@@ -106,7 +107,7 @@ class MainWindow(wx.Frame):
         self.tabctrl.addTab(self.explorerPnl, "", svg=self.getResource(ID_PROJECT_EXPLORER))
         self.tabctrl.selectTab("properties")
 
-        self.ResultPnl = ResultPanel(self, styles, self.controller, style=wx.SUNKEN_BORDER)
+        self.ResultPnl = ResultPanel(self, self.controller, style=wx.SUNKEN_BORDER)
         self.ResultPnl.Bind(zoom.EVT_IMAGE_UPDATED, self.onImageUpdated)
         self.ResultPnl.Bind(zoom.EVT_ZOOM_AREA, self.onUserGenerate)
         self.ResultPnl.Bind(zoom.EVT_DIVEDOWN, self.onDiveDown)
@@ -114,7 +115,7 @@ class MainWindow(wx.Frame):
         hbox.Add(self.tabctrl, 1, 0, 0)
         hbox.Add(self.ResultPnl, 10, wx.EXPAND | wx.ALL, 0)
         self.sizer.Add(hbox, 1, flag=wx.EXPAND)
-        self.statusBar = StatusBar(self, styles, self.controller, size=(4000,15))
+        self.statusBar = StatusBar(self, self.controller, size=(4000,15))
         self.sizer.Add(self.statusBar, 0, wx.EXPAND | wx.ALL, 0)
         self.sizer.Layout()
 
@@ -384,6 +385,7 @@ def start():
        
     # construct the asynchronous app and run it in the main async event loop
     app = WxAsyncApp()
+    styles.init()
     loop = asyncio.get_event_loop()
     controller = Controller(Model())
     w = MainWindow(WINDOW_STYLES, controller)

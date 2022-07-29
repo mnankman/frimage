@@ -6,17 +6,17 @@ import lib.wxdyn.log as  log
 
 from core.model import JuliaProject
 import lib.wxdyn.dynctrl as dynctrl 
+import lib.wxdyn as wxdyn 
 import gui.zoompanel as zoompanel
 import random
         
 RESOURCES="resource"
 
 class ProjectPanel(wx.Panel):
-    def __init__(self, parent, styles, controller, **kw):
-        super(ProjectPanel, self).__init__(parent, **kw)    
-        self.styles = styles
-        self.SetBackgroundColour(self.styles["BackgroundColour"])
-        self.SetForegroundColour(self.styles["ForegroundColour"])
+    def __init__(self, parent, controller, **kw):
+        super(ProjectPanel, self).__init__(parent, **kw)   
+        self.styler = wxdyn.WindowStyler()
+        self.styler.select("Anything:normal", self) 
 
         self.controller = controller
         self.model = self.controller.getModel()
@@ -45,9 +45,9 @@ class ProjectPanel(wx.Panel):
         self.Refresh()
 
 class StatusBar(ProjectPanel):
-    def __init__(self, parent, styles, controller, **kw):
-        super(StatusBar, self).__init__(parent, styles, controller, **kw)    
-        self.SetBackgroundColour("#444444")
+    def __init__(self, parent, controller, **kw):
+        super(StatusBar, self).__init__(parent, controller, **kw)    
+        self.styler.select("StatusBar:normal", self) 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self.sizer)
         self.sizer.Layout()
@@ -60,8 +60,8 @@ class StatusBar(ProjectPanel):
         gridsizer = wx.FlexGridSizer(1,3,5,0)
         self.progressBar = progress.ProgressIndicator(self)
         gridsizer.AddMany([
-            (dynctrl.DynamicLabel(self, self.project, "path", self.styles), 1, wx.ALIGN_BOTTOM),
-            (dynctrl.DynamicLabel(self, self.project, "saved", self.styles, valuemapping={False: "*", True: ""}), 1, wx.ALIGN_BOTTOM),
+            (dynctrl.DynamicLabel(self, self.project, "path"), 1, wx.ALIGN_BOTTOM),
+            (dynctrl.DynamicLabel(self, self.project, "saved", valuemapping={False: "*", True: ""}), 1, wx.ALIGN_BOTTOM),
         ])
         self.sizer.Add(gridsizer, 10)
         self.sizer.Add(self.progressBar, 0, wx.EXPAND | wx.ALL, 0)
@@ -85,8 +85,8 @@ class StatusBar(ProjectPanel):
 
 
 class ProjectExplorerPanel(ProjectPanel):
-    def __init__(self, parent, styles, controller, **kw):
-        super(ProjectExplorerPanel, self).__init__(parent, styles, controller, **kw)
+    def __init__(self, parent, controller, **kw):
+        super(ProjectExplorerPanel, self).__init__(parent, controller, **kw)
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self.sizer)
         self.sizer.Layout()
@@ -101,12 +101,11 @@ class ProjectExplorerPanel(ProjectPanel):
         self.project = project
         self.sizer.Clear(True)
         self.projectTree = wx.TreeCtrl(self, wx.ID_ANY, wx.DefaultPosition, self.GetSize(), wx.TR_HAS_BUTTONS)
-        self.projectTree.SetBackgroundColour(self.styles["BackgroundColour"])
-        self.projectTree.SetForegroundColour(self.styles["ForegroundColour"])
         rootset = self.project.getRootSet()
         root = self.projectTree.AddRoot(rootset.getName())
         self.constructTree(root, rootset)
         self.projectTree.ExpandAll()
+        self.styler.select("Anything:normal", self.projectTree) 
         self.sizer.Add(self.projectTree, 100)
         self.sizer.Layout()
 
@@ -123,8 +122,8 @@ class ProjectExplorerPanel(ProjectPanel):
 
  
 class ProjectPropertiesPanel(ProjectPanel):
-    def __init__(self, parent, styles, controller, **kw):
-        super(ProjectPropertiesPanel, self).__init__(parent, styles, controller, **kw)
+    def __init__(self, parent, controller, **kw):
+        super(ProjectPropertiesPanel, self).__init__(parent, controller, **kw)
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
@@ -144,6 +143,7 @@ class ProjectPropertiesPanel(ProjectPanel):
         self.sizer.Layout()
 
     def construct(self, project):
+        self.styler.select("Anything:normal", self)
         self.project = project
         self.area = self.project.getArea()
         self.projectSource = self.project.getProjectSource()
@@ -151,29 +151,31 @@ class ProjectPropertiesPanel(ProjectPanel):
         self.sizer.Clear(True)
         gridsizer1 = wx.FlexGridSizer(2, gap=(5, 5))
         
-        lbl4_1 = wx.StaticText(self, label="project name:", size=(120, 20))
-        lbl4_2 = wx.StaticText(self, label="project artist:", size=(120, 20))
-        textCtrl4_1 = dynctrl.DynamicTextCtrl(self, self.project, "name", self.styles, size=(150, 24))
-        textCtrl4_2 = dynctrl.DynamicTextCtrl(self, self.project, "artist", self.styles, size=(150, 24))
-        im1 = dynctrl.DynamicBitmap(self, self.projectSource, "sourceImage", self.styles, size=(150,150))
-        im1.SetScaleMode(wx.StaticBitmap.Scale_AspectFit)
-        im2 = dynctrl.DynamicBitmap(self, self.projectSource, "heatmapBaseImage", self.styles, size=(150,150))
-        im2.SetScaleMode(wx.StaticBitmap.Scale_AspectFit)
-        im3 = dynctrl.DynamicBitmap(self, self.projectSource, "gradientImage", self.styles, size=(150,20))
-        im3.SetScaleMode(wx.StaticBitmap.Scale_Fill)
-        chkBox1 = dynctrl.DynamicCheckBox(self, self.projectSource, "flipGradient", self.styles, label="flip gradient:")
         lbl1_1 = wx.StaticText(self, label="heatmap width:", size=(120, 20))
         lbl1_2 = wx.StaticText(self, label="heatmap height:", size=(120, 20))
-        textCtrl1_1 = dynctrl.DynamicSpinCtrl(self, self.projectSource, "heatmapBaseImageWidth", self.styles, size=(60, 18), min=4, max=50, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
-        textCtrl1_2 = dynctrl.DynamicSpinCtrl(self, self.projectSource, "heatmapBaseImageHeight", self.styles, size=(60, 18), min=4, max=50, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
         lbl2_1 = wx.StaticText(self, label="generated width:", size=(120, 20))
         lbl2_2 = wx.StaticText(self, label="generated height:", size=(120, 20))
-        textCtrl2_1 = dynctrl.DynamicSpinCtrl(self, self.project, "width", self.styles, size=(60, 18), min=200, max=2500, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
-        textCtrl2_2 = dynctrl.DynamicSpinCtrl(self, self.project, "height", self.styles, size=(60, 18), min=200, max=2500, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
         lbl3_1 = wx.StaticText(self, label="border size:", size=(120, 20))
         lbl3_2 = wx.StaticText(self, label="border colour:", size=(120, 20))
-        textCtrl3_1 = dynctrl.DynamicSpinCtrl(self, self.project, "borderSize", self.styles, size=(60, 18), min=0, max=50, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
-        textCtrl3_2 = dynctrl.DynamicSpinCtrl(self, self.project, "borderColourPick", self.styles, size=(60, 18), min=1, max=255, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
+        lbl4_1 = wx.StaticText(self, label="project name:", size=(120, 20))
+        lbl4_2 = wx.StaticText(self, label="project artist:", size=(120, 20))
+        self.styler.select("Anything:normal", lbl1_1, lbl1_2, lbl2_1, lbl2_2, lbl3_1, lbl3_2, lbl4_1, lbl4_2)
+
+        textCtrl4_1 = dynctrl.DynamicTextCtrl(self, self.project, "name", size=(150, 24))
+        textCtrl4_2 = dynctrl.DynamicTextCtrl(self, self.project, "artist", size=(150, 24))
+        im1 = dynctrl.DynamicBitmap(self, self.projectSource, "sourceImage", size=(150,150))
+        im1.SetScaleMode(wx.StaticBitmap.Scale_AspectFit)
+        im2 = dynctrl.DynamicBitmap(self, self.projectSource, "heatmapBaseImage", size=(150,150))
+        im2.SetScaleMode(wx.StaticBitmap.Scale_AspectFit)
+        im3 = dynctrl.DynamicBitmap(self, self.projectSource, "gradientImage", size=(150,20))
+        im3.SetScaleMode(wx.StaticBitmap.Scale_Fill)
+        chkBox1 = dynctrl.DynamicCheckBox(self, self.projectSource, "flipGradient",  label="flip gradient:")
+        textCtrl1_1 = dynctrl.DynamicSpinCtrl(self, self.projectSource, "heatmapBaseImageWidth", size=(60, 18), min=4, max=50, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
+        textCtrl1_2 = dynctrl.DynamicSpinCtrl(self, self.projectSource, "heatmapBaseImageHeight", size=(60, 18), min=4, max=50, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
+        textCtrl2_1 = dynctrl.DynamicSpinCtrl(self, self.project, "width", size=(60, 18), min=200, max=2500, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
+        textCtrl2_2 = dynctrl.DynamicSpinCtrl(self, self.project, "height", size=(60, 18), min=200, max=2500, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
+        textCtrl3_1 = dynctrl.DynamicSpinCtrl(self, self.project, "borderSize", size=(60, 18), min=0, max=50, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
+        textCtrl3_2 = dynctrl.DynamicSpinCtrl(self, self.project, "borderColourPick", size=(60, 18), min=1, max=255, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
         gridsizer1.AddMany([
             (lbl4_1, 1), (textCtrl4_1, 1), 
             (lbl4_2, 1), (textCtrl4_2, 1),
@@ -193,8 +195,10 @@ class ProjectPropertiesPanel(ProjectPanel):
             self.cxy = project.getCxy()
             lbl5_1 = wx.StaticText(self, label="cx:", size=(120, 20))
             lbl5_2 = wx.StaticText(self, label="cy:", size=(120, 20))
-            textCtrl5_1 = dynctrl.DynamicTextCtrl(self, self.cxy, "cx", self.styles, size=(150, 18))
-            textCtrl5_2 = dynctrl.DynamicTextCtrl(self, self.cxy, "cy", self.styles, size=(150, 18))
+            self.styler.select("Anything:normal", lbl5_1, lbl5_2)
+
+            textCtrl5_1 = dynctrl.DynamicTextCtrl(self, self.cxy, "cx", size=(150, 18))
+            textCtrl5_2 = dynctrl.DynamicTextCtrl(self, self.cxy, "cy", size=(150, 18))
 
             gridsizer3 = wx.FlexGridSizer(2, gap=(5, 5))
             gridsizer3.AddMany([
@@ -207,9 +211,9 @@ class ProjectPropertiesPanel(ProjectPanel):
         gridsizer4 = wx.FlexGridSizer(1, gap=(5, 5))
 
         pw,ph = self.GetSize()
-        chkPreview = dynctrl.DynamicCheckBox(self, self.project, "preview", self.styles, label="preview:")
+        chkPreview = dynctrl.DynamicCheckBox(self, self.project, "preview", label="preview:")
         chkPreview.Bind(wx.EVT_CHECKBOX, self.onPreviewCheckboxChanged)
-        imgPreview = dynctrl.DynamicBitmap(self, self.project, "previewImage", self.styles, False, size=(150,150))
+        imgPreview = dynctrl.DynamicBitmap(self, self.project, "previewImage", False, size=(150,150))
         imgPreview.SetScaleMode(wx.StaticBitmap.Scale_Fill)
         if isinstance(project, JuliaProject):
             btnRandomCxy = wx.Button(self, label=_("Random Cx & Cy"), size=(pw, 18))
@@ -249,8 +253,8 @@ class ProjectPropertiesPanel(ProjectPanel):
 
 
 class ResultPanel(ProjectPanel):
-    def __init__(self, parent, styles, controller, **kw):
-        super(ResultPanel, self).__init__(parent, styles, controller, **kw)
+    def __init__(self, parent, controller, **kw):
+        super(ResultPanel, self).__init__(parent, controller, **kw)
         self.model.subscribe(self, "msg_generate_complete", self.onMsgGenerateComplete)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
@@ -260,7 +264,7 @@ class ResultPanel(ProjectPanel):
     def construct(self, project):
         self.project = project
         self.sizer.Clear(True)
-        self.imZmPnl = zoompanel.ZoomPanel(self, self.project, "generatedImage", self.styles)
+        self.imZmPnl = zoompanel.ZoomPanel(self, self.project, "generatedImage")
         self.imZmPnl.Bind(zoompanel.EVT_IMAGE_UPDATED, self.onImageUpdated)
         self.imZmPnl.Bind(zoompanel.EVT_ZOOM_AREA, self.onAreaZoom)
         self.imZmPnl.Bind(zoompanel.EVT_DIVEDOWN, self.onDiveDown)

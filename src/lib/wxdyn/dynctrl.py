@@ -2,6 +2,7 @@ import wx
 from .modelobject import ModelObject
 from PIL import Image
 import lib.wxdyn.log as  log
+import lib.wxdyn as wxdyn
 
 class DynamicCtrl:
     def __init__(self, modelObject, attributeName):
@@ -12,6 +13,9 @@ class DynamicCtrl:
         self.modelObject = modelObject
         self.attributeName = attributeName
         self.modelObject.subscribe(self, "msg_object_modified", self.onModelObjectChange)
+        self.paintStyler = wxdyn.PaintStyler()
+        self.styler = wxdyn.WindowStyler()
+        self.styler.select("Anything:normal", self)
 
     def __del__(self):
         try:
@@ -26,10 +30,11 @@ class DynamicCtrl:
         e.Skip()
 
     def onModelObjectChange(self, payload):
+        self.styler.select("Anything:normal", self)
         pass
 
 class DynamicLabel(DynamicCtrl, wx.StaticText):
-    def __init__(self, parent, modelObject, attributeName, styles, **kw):
+    def __init__(self, parent, modelObject, attributeName, **kw):
         self.valueMap = {}
         kw2={}
         for k,v in kw.items():
@@ -40,8 +45,6 @@ class DynamicLabel(DynamicCtrl, wx.StaticText):
                 kw2[k]=v
         DynamicCtrl.__init__(self, modelObject, attributeName)
         wx.StaticText.__init__(self, parent, **kw2)
-        self.SetBackgroundColour(styles["BackgroundColour"])
-        self.SetForegroundColour(styles["ForegroundColour"])
         attrVal = modelObject.getAttribute(self.attributeName)
         if attrVal in self.valueMap:
             self.SetLabel(str(self.valueMap[attrVal]))
@@ -49,6 +52,7 @@ class DynamicLabel(DynamicCtrl, wx.StaticText):
             self.SetLabel(str(attrVal))
 
     def onModelObjectChange(self, payload):
+        super().onModelObjectChange(payload)
         obj = payload["object"]
         attrVal = obj.getAttribute(self.attributeName)
         if attrVal in self.valueMap:
@@ -57,52 +61,47 @@ class DynamicLabel(DynamicCtrl, wx.StaticText):
             self.SetLabel(str(attrVal))
 
 class DynamicTextCtrl(DynamicCtrl, wx.TextCtrl):
-    def __init__(self, parent, modelObject, attributeName, styles, **kw):
+    def __init__(self, parent, modelObject, attributeName, **kw):
         DynamicCtrl.__init__(self, modelObject, attributeName)
         wx.TextCtrl.__init__(self, parent, **kw)
-        self.SetBackgroundColour(styles["BackgroundColour"])
-        self.SetForegroundColour(styles["ForegroundColour"])
         self.SetValue(str(modelObject.getAttribute(self.attributeName)))
         self.Bind(wx.EVT_TEXT, self.onUserValueChange) 
 
     def onModelObjectChange(self, payload):
+        super().onModelObjectChange(payload)
         obj = payload["object"]
         self.ChangeValue(str(obj.getAttribute(self.attributeName)))
 
 class DynamicSpinCtrl(DynamicCtrl, wx.SpinCtrl):
-    def __init__(self, parent, modelObject, attributeName, styles, **kw):
+    def __init__(self, parent, modelObject, attributeName, **kw):
         DynamicCtrl.__init__(self, modelObject, attributeName)
         wx.SpinCtrl.__init__(self, parent, **kw)
-        self.SetBackgroundColour(styles["BackgroundColour"])
-        self.SetForegroundColour(styles["ForegroundColour"])
         self.SetValue(str(modelObject.getAttribute(self.attributeName)))
         self.Bind(wx.EVT_TEXT, self.onUserValueChange) 
         self.Bind(wx.EVT_SPINCTRL, self.onUserValueChange) 
 
     def onModelObjectChange(self, payload):
+        super().onModelObjectChange(payload)
         obj = payload["object"]
         self.SetValue(int(obj.getAttribute(self.attributeName)))
 
 class DynamicCheckBox(DynamicCtrl, wx.CheckBox):
-    def __init__(self, parent, modelObject, attributeName, styles, **kw):
+    def __init__(self, parent, modelObject, attributeName, **kw):
         DynamicCtrl.__init__(self, modelObject, attributeName)
         wx.CheckBox.__init__(self, parent, **kw)
-        self.SetBackgroundColour(styles["BackgroundColour"])
-        self.SetForegroundColour(styles["ForegroundColour"])
         self.SetValue(modelObject.getAttribute(self.attributeName))
         self.Bind(wx.EVT_CHECKBOX, self.onUserValueChange) 
 
     def onModelObjectChange(self, payload):
+        super().onModelObjectChange(payload)
         obj = payload["object"]
         self.SetValue(obj.getAttribute(self.attributeName))
 
 class DynamicBitmap(DynamicCtrl, wx.StaticBitmap):
-    def __init__(self, parent, modelObject, attributeName, styles, autoSize=True, **kw):
+    def __init__(self, parent, modelObject, attributeName, autoSize=True, **kw):
         DynamicCtrl.__init__(self, modelObject, attributeName)
         wx.StaticBitmap.__init__(self, parent, **kw)
         self.autoSize = autoSize
-        self.SetBackgroundColour(styles["BackgroundColour"])
-        self.SetForegroundColour(styles["ForegroundColour"])
         self.setBitmap(modelObject.getAttribute(self.attributeName), self.GetSize())
 
     def pilImageToWxImage(self, pilImg):
@@ -127,6 +126,7 @@ class DynamicBitmap(DynamicCtrl, wx.StaticBitmap):
         self.Refresh()
 
     def onModelObjectChange(self, payload):
+        super().onModelObjectChange(payload)
         obj = payload["object"]
         self.setBitmap(obj.getAttribute(self.attributeName), self.GetSize())
 

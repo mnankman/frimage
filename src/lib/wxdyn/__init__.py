@@ -4,3 +4,4 @@ from .persistentobject import *
 from .dynctrl import *
 from .util import *
 from .tabctrl import *
+from .styler import *
