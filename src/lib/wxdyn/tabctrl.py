@@ -35,18 +35,23 @@ class TabButton(wx.Panel):
             scale = dcdim / imgdim
             
             if self.__selected__:
-                dc.SetPen(wx.Pen("#dddddd"))
-                dc.SetBrush(wx.Brush("#dddddd", style=wx.BRUSHSTYLE_SOLID))
+                dc.SetPen(wx.Pen("#333333", style=wx.PENSTYLE_SOLID))
+                dc.SetBrush(wx.Brush("#333333", style=wx.BRUSHSTYLE_SOLID))
             elif self.__mouseOver__:
-                dc.SetPen(wx.Pen("#aaaaaa"))
-                dc.SetBrush(wx.Brush("#aaaaaa", style=wx.BRUSHSTYLE_SOLID))
+                dc.SetPen(wx.Pen("#555555", style=wx.PENSTYLE_SOLID))
+                dc.SetBrush(wx.Brush("#555555", style=wx.BRUSHSTYLE_SOLID))
             else:
-                dc.SetPen(wx.Pen("#888888"))
-                dc.SetBrush(wx.Brush("#888888", style=wx.BRUSHSTYLE_SOLID))
-            dc.DrawRectangle((0,0, self.Size.width, self.Size.height))
-
+                dc.SetPen(wx.Pen("#444444", style=wx.PENSTYLE_SOLID))
+                dc.SetBrush(wx.Brush("#444444", style=wx.BRUSHSTYLE_SOLID))
+            dc.DrawRectangle((0, 0, self.Size.width, self.Size.height))
+            if self.__selected__:
+                dc.SetPen(wx.Pen("#FFFFFF", style=wx.PENSTYLE_SOLID))
+                dc.SetBrush(wx.Brush("#FFFFFF", style=wx.BRUSHSTYLE_SOLID))
+                dc.DrawRectangle(0,0,2,self.Size.height)
+ 
+            dc.SetDeviceOrigin(3, 3)
             gc = wx.GraphicsContext.Create(dc)
-            self.__svg__.RenderToGC(gc, scale)
+            self.__svg__.RenderToGC(gc, 0.8*scale)
         
 
     def onMouseEnter(self, event):
@@ -66,12 +71,13 @@ class TabCtrl(wx.Panel):
     def __init__(self, parent, **kw):
         super(TabCtrl, self).__init__(parent, **kw)    
         self.tabs = {}
-
+        self.SetBackgroundColour("#444444")
+        
         self.SetSize(self.GetParent().GetSize())
         self.sizer = wx.FlexGridSizer(1,2,0,0)
         self.SetSizer(self.sizer)
         self.tabsizer = wx.FlexGridSizer(20,1,5,0)
-        self.pagepanel = wx.Panel(self, style=wx.BORDER_SIMPLE)
+        self.pagepanel = wx.Panel(self)
         self.pagesizer = wx.BoxSizer(wx.VERTICAL)
         self.pagepanel.SetSizer(self.pagesizer)
         self.sizer.Add(self.tabsizer, 1)
@@ -85,7 +91,7 @@ class TabCtrl(wx.Panel):
         panel.Reparent(self.pagepanel)
         nm = panel.GetName()
         if nm and len(nm)>0 and not nm in self.tabs:
-            btn = TabButton(self, name=nm, size=(32,32), style=wx.BORDER_NONE)
+            btn = TabButton(self, name=nm, size=(36, 36), style=wx.BORDER_NONE)
             #btn.SetBackgroundColour(self.GetBackgroundColour())
             #btn.SetForegroundColour(self.GetForegroundColour())
             btn.Bind(EVT_TAB_SELECTED, self.onTabSelect)

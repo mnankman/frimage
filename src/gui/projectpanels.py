@@ -93,8 +93,8 @@ class ProjectExplorerPanel(ProjectPanel):
         self.SetAutoLayout(True)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
-        self.SetSize(self.GetParent().GetSize())
         self.sizer.Layout()
+        self.Bind(wx.EVT_SIZE, self.onResize)
 
     def construct(self, project):
         log.debug(function=self.construct, args=project.getFullId())
@@ -115,7 +115,12 @@ class ProjectExplorerPanel(ProjectPanel):
         for gs in genset.getGeneratedSets():
             item = self.projectTree.AppendItem(parentItem, gs.getName())
             self.constructTree(item, gs)
-    
+
+    def onResize(self, e):
+        e.Skip()
+        w,h = self.GetSize()
+        self.Refresh(rect=(0,0,w,h))
+
  
 class ProjectPropertiesPanel(ProjectPanel):
     def __init__(self, parent, styles, controller, **kw):

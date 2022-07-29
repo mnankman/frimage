@@ -63,7 +63,7 @@ RESOURCE_LIST = {
     ID_PROJECT_MAKE_ROOT: RESOURCES+"/upload.png",
     ID_PROJECT_DELETE_BRANCH: RESOURCES+"/delete.png",
     ID_PROJECT_EXPLORER: RESOURCES+"/tree.svg",
-    ID_PROJECT_PROPERTIES: RESOURCES+"/list.svg",
+    ID_PROJECT_PROPERTIES: RESOURCES+"/ballot.svg",
 }
 
 WINDOW_STYLES = {
@@ -96,10 +96,11 @@ class MainWindow(wx.Frame):
         self.SetSizer(self.sizer)
         hbox = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.configPnl = ProjectPropertiesPanel(self, styles, self.controller, size=(310,800), name="properties")
-        self.explorerPnl = ProjectExplorerPanel(self, styles, self.controller, size=(310,800), name="explorer")
+        self.configPnl = ProjectPropertiesPanel(self, styles, self.controller, size=(310,2000), name="properties")
+        self.configPnl.SetMaxSize((310,2000))
+        self.explorerPnl = ProjectExplorerPanel(self, styles, self.controller, size=(310,2000), name="explorer")
+        self.explorerPnl.SetMaxSize((310,2000))
         self.tabctrl = wxdyn.TabCtrl(self)
-        self.tabctrl.SetBackgroundColour(styles["BackgroundColour"])
         self.tabctrl.SetForegroundColour(styles["ForegroundColour"])
         self.tabctrl.addTab(self.configPnl, "", svg=self.getResource(ID_PROJECT_PROPERTIES))
         self.tabctrl.addTab(self.explorerPnl, "", svg=self.getResource(ID_PROJECT_EXPLORER))
@@ -111,7 +112,7 @@ class MainWindow(wx.Frame):
         self.ResultPnl.Bind(zoom.EVT_DIVEDOWN, self.onDiveDown)
 
         hbox.Add(self.tabctrl, 1, 0, 0)
-        hbox.Add(self.ResultPnl, 5, wx.EXPAND | wx.ALL, 0)
+        hbox.Add(self.ResultPnl, 10, wx.EXPAND | wx.ALL, 0)
         self.sizer.Add(hbox, 1, flag=wx.EXPAND)
         self.statusBar = StatusBar(self, styles, self.controller, size=(4000,15))
         self.sizer.Add(self.statusBar, 0, wx.EXPAND | wx.ALL, 0)
