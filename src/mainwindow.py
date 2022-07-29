@@ -400,8 +400,6 @@ class MainWindow(wx.Frame):
         InspectionTool().Show()
         e.Skip()
 
-import logging
-
 import PIL._version as pilversion
 import numpy as np
 import platform
@@ -412,19 +410,10 @@ def versions():
     print("PIL version", pilversion.__version__)
     print("Numpy version", np.__version__)
 
-
+import logsetup
 def start():
-    # configure logging
-    logging.basicConfig(format='[%(name)s] %(levelname)s:%(message)s', level=logging.DEBUG)
-    log.setLoggerLevel("lib.persistentobject", logging.INFO)
-    log.setLoggerLevel("lib.modelobject", logging.ERROR)
-    log.setLoggerLevel("gui.projectgallery", logging.ERROR)
-    log.setLoggerLevel("core.filemgmt", logging.ERROR)
-    log.setLoggerLevel("core.model.complex", logging.ERROR)
-    log.setLoggerLevel("core.model.project", logging.ERROR)
-    log.setLoggerLevel("core.model.model", logging.ERROR)
-    log.setLoggerLevel("lib.pubsub", logging.ERROR)
-
+    logsetup.setup(logsetup.SETUP_DEBUG)
+    
     versions()
        
     # construct the asynchronous app and run it in the main async event loop
