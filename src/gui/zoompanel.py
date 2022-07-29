@@ -222,7 +222,7 @@ class ZoomPanel(wxd.DynamicCtrl, wx.Panel):
         sw,sh = pilImg.size
         tr = tw/th
         sr = sw/sh
-        return (tw, int(tw/sr)) if sr>tr else (int(th*sr), th)
+        return (int(tw), int(tw/sr)) if sr>tr else (int(th*sr), int(th))
 
 # ------- METHODS FOR DRAWING THE CONTENTS -------
 
