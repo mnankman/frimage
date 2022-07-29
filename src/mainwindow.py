@@ -1,10 +1,13 @@
 import asyncio
 from platform import platform
+from tkinter import W
 import wx
+import wx.svg
 from wxasync import WxAsyncApp
 from wx.lib.inspection import InspectionTool
 
 import lib.wxdyn.log as log
+import lib.wxdyn as wxdyn
 
 from core.model import Model
 from core.controller import Controller
@@ -46,7 +49,7 @@ ID_GROUP_PROJECTLOADED = []
 for i in range(ID_FILE_SAVE_PROJECT,ID_FILE_SAVE_GENERATED_IMAGE+1): ID_GROUP_PROJECTLOADED.append(i)
 for i in range(ID_PROJECT_SELECT_SOURCEIMAGE, ID_PROJECT_FIT_IMAGE+1): ID_GROUP_PROJECTLOADED.append(i)
 
-ICONS = {
+RESOURCE_LIST = {
     ID_FILE_OPEN_PROJECT: RESOURCES+"/open.png",
     ID_FILE_SAVE_PROJECT: RESOURCES+"/save.png",
     ID_PROJECT_SELECT_SOURCEIMAGE: RESOURCES+"/add_photo.png",
@@ -59,66 +62,14 @@ ICONS = {
     ID_PROJECT_HOME: RESOURCES+"/home.png",
     ID_PROJECT_MAKE_ROOT: RESOURCES+"/upload.png",
     ID_PROJECT_DELETE_BRANCH: RESOURCES+"/delete.png",
-    ID_PROJECT_EXPLORER: RESOURCES+"/tree.png",
-    ID_PROJECT_PROPERTIES: RESOURCES+"/table.png",
+    ID_PROJECT_EXPLORER: RESOURCES+"/tree.svg",
+    ID_PROJECT_PROPERTIES: RESOURCES+"/list.svg",
 }
 
 WINDOW_STYLES = {
     "BackgroundColour": "#333333",
     "ForegroundColour": "#FFFFFF"
 }
-
-class TabCtrl(wx.Panel):
-    def __init__(self, parent, styles, **kw):
-        super(TabCtrl, self).__init__(parent, **kw)    
-        self.tabs = {}
-
-        self.styles = styles
-        self.SetBackgroundColour(styles["BackgroundColour"])
-        self.SetForegroundColour(styles["ForegroundColour"])
-        
-        self.SetSize(self.GetParent().GetSize())
-        self.sizer = wx.FlexGridSizer(1,2,0,0)
-        self.SetSizer(self.sizer)
-        self.tabsizer = wx.FlexGridSizer(20,1,5,0)
-        self.pagepanel = wx.Panel(self, style=wx.BORDER_SIMPLE)
-        self.pagesizer = wx.BoxSizer(wx.VERTICAL)
-        self.pagepanel.SetSizer(self.pagesizer)
-        self.sizer.Add(self.tabsizer, 1)
-        self.sizer.Add(self.pagepanel, 1)
-        self.sizer.Layout()
-        self.SetAutoLayout(True)
-        self.Bind(wx.EVT_SIZE, self.onResize)
-
-    def addTab(self, panel, bitmap):
-        assert isinstance(panel, wx.Panel)
-        panel.Reparent(self.pagepanel)
-        nm = panel.GetName()
-        if not nm in self.tabs:
-            self.tabs[nm] = panel
-            btn = wx.BitmapButton(self, bitmap=bitmap, name=nm, size=(26,26))
-            btn.Bind(wx.EVT_BUTTON, self.onTabSelect)
-            self.tabsizer.Add(btn, 1)
-            self.pagesizer.Add(panel)
-            panel.Hide()
-        self.tabsizer.Layout()
-        self.sizer.Layout()
-
-    def selectTab(self, nm):
-        log.debug(function=self.selectTab, args=nm)
-        for c in self.pagepanel.GetChildren():c.Hide()
-        self.tabs[nm].Show()
-
-    def onTabSelect(self, e):
-        btn = e.GetEventObject()
-        nm = btn.GetName()
-        self.selectTab(nm)
-
-    def onResize(self, e):
-        e.Skip()
-        pw, ph = self.GetParent().GetSize()
-        self.pagepanel.SetSize(pw-2, ph-2)
-        self.sizer.Layout()
 
 class MainWindow(wx.Frame):
     def __init__(self, styles, controller):
@@ -145,11 +96,13 @@ class MainWindow(wx.Frame):
         self.SetSizer(self.sizer)
         hbox = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.tabctrl = TabCtrl(self, styles)
         self.configPnl = ProjectPropertiesPanel(self, styles, self.controller, size=(310,800), name="properties")
         self.explorerPnl = ProjectExplorerPanel(self, styles, self.controller, size=(310,800), name="explorer")
-        self.tabctrl.addTab(self.configPnl, self.getToolBitmap(ID_PROJECT_PROPERTIES))
-        self.tabctrl.addTab(self.explorerPnl, self.getToolBitmap(ID_PROJECT_EXPLORER))
+        self.tabctrl = wxdyn.TabCtrl(self)
+        self.tabctrl.SetBackgroundColour(styles["BackgroundColour"])
+        self.tabctrl.SetForegroundColour(styles["ForegroundColour"])
+        self.tabctrl.addTab(self.configPnl, "", svg=self.getResource(ID_PROJECT_PROPERTIES))
+        self.tabctrl.addTab(self.explorerPnl, "", svg=self.getResource(ID_PROJECT_EXPLORER))
         self.tabctrl.selectTab("properties")
 
         self.ResultPnl = ResultPanel(self, styles, self.controller, style=wx.SUNKEN_BORDER)
@@ -205,13 +158,25 @@ class MainWindow(wx.Frame):
             log.warning(e, function=self.enable, args=(id, enabled))
             pass
     
+    def getResource(self, id):
+        if id in RESOURCE_LIST.keys():
+            res = RESOURCE_LIST[id]
+            if res.endswith("png"):
+                return wx.Image(res)
+            elif res.endswith("svg"):
+                return wx.svg.SVGimage.CreateFromFile(res)
+            else:
+                return None
+
     def getToolBitmap(self, id, enabled=True):
-        if id in ICONS.keys():
-            im = wx.Image(ICONS[id])
+        im = self.getResource(id)
+        if im:
             if enabled: 
                 return im.ConvertToBitmap()
             else:
                 return im.ConvertToDisabled().ConvertToBitmap()
+        else:
+            return None
 
     def addTool(self, toolbar, id, label, shortHelp=None, longHelp=""):
         toolbar.AddTool(id, label, self.getToolBitmap(id), self.getToolBitmap(id, False), 
@@ -413,7 +378,7 @@ def versions():
 import logsetup
 def start():
     logsetup.setup(logsetup.SETUP_DEBUG)
-    
+
     versions()
        
     # construct the asynchronous app and run it in the main async event loop

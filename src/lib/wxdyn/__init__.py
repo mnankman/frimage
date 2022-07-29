@@ -3,3 +3,4 @@ from .modelobject import *
 from .persistentobject import *
 from .dynctrl import *
 from .util import *
+from .tabctrl import *
