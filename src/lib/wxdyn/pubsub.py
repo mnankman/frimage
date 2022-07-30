@@ -70,7 +70,14 @@ class MessageQueue:
                     handler = msg[0]
                     payload = msg[1]
                     log.debug("handle msg: ", payload["event"], handler.__qualname__, function=self.handleNextMessage)
-                    handler(payload)
+                    try:
+                        handler(payload)
+                    except RuntimeError as re:
+                        log.error(re, function = self.handleNextMessage)
+                        raise re
+                    except AttributeError as ae:
+                        log.error(ae, function = self.handleNextMessage)
+
                         
     def __init__(self):
         pass

@@ -230,6 +230,9 @@ class ProjectPropertiesPanel(ProjectPanel):
         gridsizer4.Add(imgPreview, 1)
         
         self.sizer.Add(gridsizer4, 1)
+
+        for c in self.GetChildren():
+            self.styler.select("Anything:normal", c) 
         self.sizer.Layout()
 
     def onResize(self, e):

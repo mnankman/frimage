@@ -76,18 +76,9 @@ class WindowStyler:
                 assert isinstance(style, dict)
                 for styleType, styleInstance in style.items():
                     if styleType == wx.Font: 
-                        try:
-                            w.SetFont(styleInstance)
-                        except RuntimeError:
-                            pass
+                        w.SetFont(styleInstance)
                     if styleType == Colors: 
                         if styleInstance.foreground: 
-                            try:
-                                w.SetForegroundColour(styleInstance.foreground)
-                            except RuntimeError as re:
-                                log.warning(re, function = self.select)
+                            w.SetForegroundColour(styleInstance.foreground)
                         if styleInstance.background: 
-                            try:
-                                w.SetBackgroundColour(styleInstance.background)
-                            except RuntimeError as re:
-                                log.warning(re, function = self.select)
+                            w.SetBackgroundColour(styleInstance.background)
