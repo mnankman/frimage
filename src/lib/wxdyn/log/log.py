@@ -49,9 +49,10 @@ def log(logger_method, msg, *args, **kwargs):
         if k=="function": 
             try:
                 func = v.__qualname__
+            except:
+                func = v
             finally:
                 pass
-            if not func: func = v
         elif k=="args": 
             fargs = util.collectionToString(v) if isinstance(v, (tuple,list)) else "(" + util.toString(v) + ")"
         elif k=="returns": 
