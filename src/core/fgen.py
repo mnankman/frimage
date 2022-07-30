@@ -31,11 +31,13 @@ def getImage(size, plot, gradient):
     assert size
     assert gradient
     if plot.any() and gradient and size:
-        image = Image.new("RGB", size)
-        ld = image.load()
         w,h = size
-        for y in range(h):
-            for x in range(w):
+        pw,ph = plot.shape
+        s = (w if w<=pw else pw, h if h<ph else ph)
+        image = Image.new("RGB", s)
+        ld = image.load()
+        for y in range(s[1]):
+            for x in range(s[0]):
                 ld[x,y] = gradient[int(plot[x,y])]
         return image
     else:
