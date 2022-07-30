@@ -4,7 +4,7 @@ import wx.lib.progressindicator as progress
 
 import lib.wxdyn.log as  log
 
-from core.model import JuliaProject
+from core.model import JuliaProject, GeneratedSet
 import lib.wxdyn.dynctrl as dynctrl 
 import lib.wxdyn as wxdyn 
 import gui.zoompanel as zoompanel
@@ -17,7 +17,6 @@ class ProjectPanel(wx.Panel):
         super(ProjectPanel, self).__init__(parent, **kw)   
         self.styler = wxdyn.WindowStyler()
         self.styler.select("Anything:normal", self) 
-
         self.controller = controller
         self.model = self.controller.getModel()
         self.model.subscribe(self, "msg_new_project", self.onUpdate)
@@ -32,6 +31,7 @@ class ProjectPanel(wx.Panel):
         pass
 
     def onUpdate(self, payload):
+        log.debug(function=self.onUpdate, args=payload)
         #self.cleanUp()
         if "project" in payload.keys():            
             prj = payload["project"]
@@ -39,6 +39,7 @@ class ProjectPanel(wx.Panel):
             prj = payload["object"]
         else:
             return
+        log.debug(function=self.onUpdate, args=prj.getFullId())
         self.construct(prj)
         if prj != self.controller.getCurrentProject():
             prj.subscribe(self, "msg_object_modified", self.onUpdate)
@@ -65,7 +66,6 @@ class StatusBar(ProjectPanel):
         ])
         self.sizer.Add(gridsizer, 10)
         self.sizer.Add(self.progressBar, 0, wx.EXPAND | wx.ALL, 0)
-        
         self.sizer.Layout()
 
     def onProgress(self, generator, p):
@@ -87,38 +87,47 @@ class StatusBar(ProjectPanel):
 class ProjectExplorerPanel(ProjectPanel):
     def __init__(self, parent, controller, **kw):
         super(ProjectExplorerPanel, self).__init__(parent, controller, **kw)
-        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.SetSizer(self.sizer)
-        self.sizer.Layout()
-        self.SetAutoLayout(True)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
         self.sizer.Layout()
-        self.Bind(wx.EVT_SIZE, self.onResize)
+        self.SetAutoLayout(True)
+        self.model.subscribe(self, "msg_generate_complete", self.onUpdate)
 
     def construct(self, project):
         log.debug(function=self.construct, args=project.getFullId())
         self.project = project
         self.sizer.Clear(True)
-        self.projectTree = wx.TreeCtrl(self, wx.ID_ANY, wx.DefaultPosition, self.GetSize(), wx.TR_HAS_BUTTONS)
-        rootset = self.project.getRootSet()
-        root = self.projectTree.AddRoot(rootset.getName())
-        self.constructTree(root, rootset)
-        self.projectTree.ExpandAll()
+        self.projectTree = wx.TreeCtrl(self, wx.ID_ANY, size=self.GetSize(), style=wx.TR_HAS_BUTTONS)
+        self.projectTree.Bind(wx.EVT_TREE_SEL_CHANGED, self.onTreeItemSelected)
         self.styler.select("Anything:normal", self.projectTree) 
-        self.sizer.Add(self.projectTree, 100)
+        rootset = self.project.getRootSet()
+        rootItem = self.projectTree.AddRoot(self.project.getName(), data=self.project)
+        rootsetItem = self.projectTree.AppendItem(rootItem, self.getItemLabel(rootset), data=rootset)
+        self.constructTree(rootsetItem, rootset)
+        self.projectTree.ExpandAll()
+        self.sizer.Add(self.projectTree, 1)
         self.sizer.Layout()
+
+    def getItemLabel(self, genset):
+        lbl = "{} [{} x {}]"
+        shape = self.project.getSize()
+        try:
+            shape = genset.getGeneratedPlot().shape
+        except:
+            pass
+        return lbl.format(genset.getName(), *shape)
 
     def constructTree(self, parentItem, genset):
         log.debug(function=self.constructTree, args=(parentItem, genset.getFullId()))
         for gs in genset.getGeneratedSets():
-            item = self.projectTree.AppendItem(parentItem, gs.getName())
+            item = self.projectTree.AppendItem(parentItem, self.getItemLabel(gs), data=gs)
             self.constructTree(item, gs)
 
-    def onResize(self, e):
-        e.Skip()
-        w,h = self.GetSize()
-        self.Refresh(rect=(0,0,w,h))
+    def onTreeItemSelected(self, e):
+        log.debug(function=self.onTreeItemSelected, args=e)
+        obj = self.projectTree.GetItemData(e.GetItem())
+        if isinstance(obj, GeneratedSet): self.controller.down(obj)
+
 
  
 class ProjectPropertiesPanel(ProjectPanel):
@@ -139,7 +148,7 @@ class ProjectPropertiesPanel(ProjectPanel):
         self.sizer.AddSpacer(40)
         self.sizer.Add(gridsizer, 1, flag=wx.ALIGN_CENTER_HORIZONTAL)
         self.SetAutoLayout(True)
-        self.Bind(wx.EVT_SIZE, self.onResize)
+        #self.Bind(wx.EVT_SIZE, self.onResize)
         self.sizer.Layout()
 
     def construct(self, project):
@@ -159,8 +168,7 @@ class ProjectPropertiesPanel(ProjectPanel):
         lbl3_2 = wx.StaticText(self, label="border colour:", size=(120, 20))
         lbl4_1 = wx.StaticText(self, label="project name:", size=(120, 20))
         lbl4_2 = wx.StaticText(self, label="project artist:", size=(120, 20))
-        self.styler.select("Anything:normal", lbl1_1, lbl1_2, lbl2_1, lbl2_2, lbl3_1, lbl3_2, lbl4_1, lbl4_2)
-
+        
         textCtrl4_1 = dynctrl.DynamicTextCtrl(self, self.project, "name", size=(150, 24))
         textCtrl4_2 = dynctrl.DynamicTextCtrl(self, self.project, "artist", size=(150, 24))
         im1 = dynctrl.DynamicBitmap(self, self.projectSource, "sourceImage", size=(150,150))
@@ -195,8 +203,7 @@ class ProjectPropertiesPanel(ProjectPanel):
             self.cxy = project.getCxy()
             lbl5_1 = wx.StaticText(self, label="cx:", size=(120, 20))
             lbl5_2 = wx.StaticText(self, label="cy:", size=(120, 20))
-            self.styler.select("Anything:normal", lbl5_1, lbl5_2)
-
+            
             textCtrl5_1 = dynctrl.DynamicTextCtrl(self, self.cxy, "cx", size=(150, 18))
             textCtrl5_2 = dynctrl.DynamicTextCtrl(self, self.cxy, "cy", size=(150, 18))
 
@@ -255,7 +262,6 @@ class ProjectPropertiesPanel(ProjectPanel):
 class ResultPanel(ProjectPanel):
     def __init__(self, parent, controller, **kw):
         super(ResultPanel, self).__init__(parent, controller, **kw)
-        self.model.subscribe(self, "msg_generate_complete", self.onMsgGenerateComplete)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
         self.SetAutoLayout(True)
@@ -291,9 +297,6 @@ class ResultPanel(ProjectPanel):
         log.debug(function=self.onDiveDown)
         e.Skip()
         wx.PostEvent(self, e)
-
-    def onMsgGenerateComplete(self, payload):
-        pass
 
     def setZoomMode(self):
         self.imZmPnl.setMode(zoompanel.MODE_ZOOM)

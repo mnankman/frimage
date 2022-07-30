@@ -299,7 +299,8 @@ class ComplexProject(Project):
 
     def down(self, genSet):
         parent = genSet.getParent()
-        if parent != None and isinstance(genSet, GeneratedSet) and parent==self.currentSet:
+        while isinstance(parent, GeneratedSet): parent = parent.getParent()
+        if parent != None and isinstance(genSet, GeneratedSet) and parent==self:
             log.debug(function=self.down, args=genSet)
             self.currentSet = genSet
             self.setModified()

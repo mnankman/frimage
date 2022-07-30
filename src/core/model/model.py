@@ -101,7 +101,7 @@ class Model(wxd.Publisher):
 
     async def generate(self, progressHandler=None, **kw):
         await self.getCurrentProject().generate(progressHandler, **kw)
-        self.dispatch("msg_generate_complete", {"generated": self.getCurrentProject().getGeneratedImage()})
+        self.dispatch("msg_generate_complete", {"project": self.__currentProject__})
 
     def getGeneratedImage(self):
         return self.getCurrentProject().getGeneratedImage()
