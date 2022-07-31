@@ -22,17 +22,11 @@ class ProjectPanel(wx.Panel):
         self.model.subscribe(self, "msg_new_project", self.onUpdate)
         self.model.subscribe(self, "msg_open_project", self.onUpdate)
 
-    def cleanUp(self):
-        children = self.GetChildren()
-        for c in children:
-            self.RemoveChild(c)
-
     def construct(self, project):
         pass
 
     def onUpdate(self, payload):
         log.debug(function=self.onUpdate, args=payload)
-        #self.cleanUp()
         if "project" in payload.keys():            
             prj = payload["project"]
         elif "object" in payload.keys():
@@ -62,7 +56,7 @@ class StatusBar(ProjectPanel):
         self.progressBar = progress.ProgressIndicator(self)
         gridsizer.AddMany([
             (dynctrl.DynamicLabel(self, self.project, "path"), 1, wx.ALIGN_BOTTOM),
-            (dynctrl.DynamicLabel(self, self.project, "saved", valuemapping={False: "*", True: ""}), 1, wx.ALIGN_BOTTOM),
+            (dynctrl.DynamicLabel(self, self.project, "touched", valuemapping={True: "*", False: ""}), 1, wx.ALIGN_BOTTOM),
         ])
         self.sizer.Add(gridsizer, 10)
         self.sizer.Add(self.progressBar, 0, wx.EXPAND | wx.ALL, 0)
@@ -207,7 +201,7 @@ class ProjectPropertiesPanel(ProjectPanel):
 
         if isinstance(project, JuliaProject):
             gridsizer4 = wx.FlexGridSizer(1, gap=(5, 5))
-            btnRandomCxy = wx.Button(self, label=_("Random Cx & Cy"), size=(pw, 18))
+            btnRandomCxy = wx.Button(self, label=_("Random Cx & Cy"), size=(100, 18))
             btnRandomCxy.Bind(wx.EVT_BUTTON, self.onRandomCxy)
             gridsizer4.Add(btnRandomCxy, 1)
             self.sizer.Add(gridsizer4, 1)

@@ -22,7 +22,7 @@ class Project(wxd.ModelObject):
         self.progress = 0
         self.__preview__ = False
         self.previewImage = None
-        self.saved = False
+        self.__touched__ = False
         self.persist("name")
         self.persist("artist")
         self.persist("version")
@@ -126,12 +126,12 @@ class Project(wxd.ModelObject):
         self.progress = p
         self.setModified()
 
-    def getSaved(self):
-        return self.saved
+    def getTouched(self):
+        return self.__touched__
 
-    def setSaved(self, saved):
-        if saved!=self.saved:
-            self.saved = saved
+    def setTouched(self, touched=True):
+        if touched!=self.__touched__:
+            self.__touched__ = touched
             self.setModified()
 
     def getGeneratedPlot(self):

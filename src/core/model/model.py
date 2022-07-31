@@ -55,19 +55,14 @@ class Model(wxd.Publisher):
             self.getCurrentProject().setName(name)
         self.getCurrentProject().setVersion(self.getApplication().getVersion())
         self.getCurrentProject().clearModified(True)
-        self.getCurrentProject().subscribe(self, "msg_object_modified", self.onProjectModified)
         self.dispatch("msg_new_project", {"project": self.getCurrentProject()})
         return self.__currentProject__
-
-    def onProjectModified(self, payload):
-        self.getCurrentProject().setSaved(False)
-        self.getCurrentProject().clearModified()
 
     def saveProperties(self, io):
         data = json.dumps(self.__currentProject__.serialize(), indent=4)
         io.write(data)
+        self.getCurrentProject().setTouched(False)
         self.dispatch("msg_project_saved", {"project": self.__currentProject__})
-        self.getCurrentProject().setSaved(True)
 
     def loadProperties(self, io):
         data = json.load(io)
@@ -114,6 +109,10 @@ class Model(wxd.Publisher):
         if self.getCurrentProject():
             self.getCurrentProject().setProjectSourceImage(path)
             self.dispatch("msg_sourceimage_selected", {"source": self.getCurrentProject().getProjectSource().getSource()})
+
+    def clearProjectTouch(self):
+        log.trace(function=self.clearProjectTouch)
+        self.getCurrentProject().setTouched(False)
 
     def clearProjectModifications(self):
         self.getCurrentProject().clearModified(True)

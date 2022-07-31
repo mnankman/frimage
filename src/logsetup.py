@@ -6,13 +6,16 @@ LOGGER_LEVELS_DEBUG = {
     "lib.wxdyn.modelobject": logging.ERROR,
     "gui.zoompanel": logging.ERROR,
     "gui.projectgallery": logging.ERROR,
+    "gui.projectpanels": logging.ERROR,
     "core.filemgmt": logging.ERROR,
     "core.model.complex": logging.ERROR,
-    "core.model.project": logging.ERROR,
-    "core.model.model": logging.ERROR,
+    "core.model.project": logging.INFO,
+    "core.model.model": logging.DEBUG,
     "lib.wxdyn.pubsub": logging.ERROR,
     "lib.wxdyn.styler": logging.ERROR,
+    "lib.wxdyn.tabctrl": logging.ERROR,
     "PIL.PngImagePlugin": logging.ERROR,
+    "asyncio": logging.ERROR,
 }
 
 LOGGER_LEVELS_PRODUCTION = {

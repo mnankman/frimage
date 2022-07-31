@@ -1,5 +1,6 @@
 import logging
 import inspect
+import traceback
 from lib.wxdyn import util
 from .colored import colored
 
@@ -46,6 +47,14 @@ def log(logger_method, msg, *args, **kwargs):
     kwargs2 = {}
     args2 = args
     for k,v in kwargs.items():
+        if k=="stacktrace":
+            stack = inspect.stack()
+            i=len(stack)
+            while i>3:
+                info = stack[i-1]
+                s='''File "{}", line {} in {}'''
+                print(s.format(info.filename, info.lineno, info.function))
+                i-=1
         if k=="function": 
             try:
                 func = v.__qualname__

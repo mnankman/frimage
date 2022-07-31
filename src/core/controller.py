@@ -25,7 +25,6 @@ class Controller:
         self.model.newProject(Model.PROJECT_TYPE_MANDELBROT, name)
 
     def newJuliaProject(self, name):
-        ps = filemgmt.ProjectStorage()
         name = self.ps.getNextName(name)
         self.model.newProject(Model.PROJECT_TYPE_JULIA, name)
         
@@ -63,6 +62,9 @@ class Controller:
 
     def clearProjectModifications(self):
         self.model.clearProjectModifications()
+
+    def clearProjectTouch(self):
+        self.model.clearProjectTouch()
 
     def saveProject(self):
         log.debug(function=self.saveProject)

@@ -273,11 +273,13 @@ class MainWindow(wx.Frame):
     def onMsgNewProject(self, payload):
         self.activateTools(ID_GROUP_PROJECTLOADED)
         self.controller.clearProjectModifications()
+        self.controller.clearProjectTouch()
         self.tabctrl.selectTab("properties")
 
     def onMsgOpenProject(self, payload):
         self.activateTools(ID_GROUP_PROJECTLOADED)
         self.controller.clearProjectModifications()
+        self.controller.clearProjectTouch()
         self.tabctrl.selectTab("properties")
 
     def onMsgProjectSaved(self, payload):
@@ -285,6 +287,7 @@ class MainWindow(wx.Frame):
 
     def onMsgGenerateComplete(self, payload):
         self.controller.clearProjectModifications()
+        self.controller.getCurrentProject().setTouched()
 
     def onUserCloseMainWindow(self, e):
         exit()
@@ -335,7 +338,7 @@ class MainWindow(wx.Frame):
 
     def askSaveProject(self):
         if self.controller.getCurrentProject()==None: return
-        if not self.controller.getCurrentProject().getSaved():
+        if self.controller.getCurrentProject().getTouched():
             if dlg.message(_("Do you want to save current project?"), wx.YES_NO) == wx.ID_YES:
                 self.controller.saveProject()
 

@@ -45,7 +45,7 @@ class ModelObject(PersistentObject, Publisher):
 
     def setModified(self):
         if not self.__modified__:
-            log.debug(self.getFullId()+".setModified()", var=("self.__modified__", self.__modified__))
+            log.trace(self.getFullId()+".setModified()")
             self.__modified__ = True
             self.dispatch("msg_object_modified", {"object": self} )
 

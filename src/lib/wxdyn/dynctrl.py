@@ -22,6 +22,7 @@ class DynamicCtrl:
             log.warning(e, function=self.__del__)
 
     def onUserValueChange(self, e):
+        log.trace(function=self.onUserValueChange, args=e)
         ctrl = e.GetEventObject()
         val = ctrl.GetValue()
         self.modelObject.setAttribute(self.attributeName, val)
