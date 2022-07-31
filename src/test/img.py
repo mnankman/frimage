@@ -1,7 +1,7 @@
 import math
 from PIL import Image, ImageDraw
 import random
-from img.imgengine import *
+from core.fgen import *
 
 def project1(size=(800,600)):
     src = Source('resource/sunset.jpg', (12,12))

@@ -5,7 +5,6 @@ from wxasync import WxAsyncApp
 from core.model.model import Model
 from core.controller import Controller
 import gui.dialogs as dlg
-import gui.i18n
 from mainwindow import MainWindow
         
 

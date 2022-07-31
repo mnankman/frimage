@@ -1,8 +1,6 @@
 from PIL import Image
 import wx
-from wx.lib.scrolledpanel import ScrolledPanel
-import json
-import os
+from builtins import _
 
 import lib.wxdyn.log as  log
 import lib.wxdyn as wxd

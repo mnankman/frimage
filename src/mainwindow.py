@@ -1,11 +1,11 @@
 import asyncio
 from platform import platform
-from tkinter import W
 import wx
 import wx.svg
 from wxasync import WxAsyncApp
 from wx.lib.inspection import InspectionTool
 
+from builtins import _
 import lib.wxdyn.log as log
 import lib.wxdyn as wxdyn
 
@@ -15,8 +15,9 @@ import gui.dialogs as dlg
 import gui.zoompanel as zoom
 from gui import ProjectPropertiesPanel, ResultPanel, ProjectExplorerPanel, StatusBar
 from gui import ProjectGalleryFrame
-from gui import i18n
 from gui import styles
+
+
         
 RESOURCES="resource"
 
