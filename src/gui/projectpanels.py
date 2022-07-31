@@ -137,16 +137,6 @@ class ProjectPropertiesPanel(ProjectPanel):
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
 
-        w,h=self.GetSize()
-        gridsizer = wx.FlexGridSizer(1, gap=(5, 5))
-        btnNewMandelbrot = wx.Button(self, label=_("New Mandelbrot project"), size=(w*0.8, 30), style=wx.CENTER)
-        btnNewJulia = wx.Button(self, label=_("New Julia project"), size=(w*0.8, 30), style=wx.CENTER)
-        gridsizer.Add(btnNewMandelbrot, 1)
-        gridsizer.Add(btnNewJulia, 1)
-        btnNewMandelbrot.Bind(wx.EVT_BUTTON, self.onNewMandelbrotProject)
-        btnNewJulia.Bind(wx.EVT_BUTTON, self.onNewJuliaProject)
-        self.sizer.AddSpacer(40)
-        self.sizer.Add(gridsizer, 1, flag=wx.ALIGN_CENTER_HORIZONTAL)
         self.SetAutoLayout(True)
         #self.Bind(wx.EVT_SIZE, self.onResize)
         self.sizer.Layout()
@@ -213,23 +203,14 @@ class ProjectPropertiesPanel(ProjectPanel):
                 (lbl5_2, 1), (textCtrl5_2, 1) 
             ])
             self.sizer.Add(gridsizer3, 1)
-            self.sizer.AddSpacer(10)
+            self.sizer.AddSpacer(10)        
 
-        gridsizer4 = wx.FlexGridSizer(1, gap=(5, 5))
-
-        pw,ph = self.GetSize()
-        chkPreview = dynctrl.DynamicCheckBox(self, self.project, "preview", label="preview:")
-        chkPreview.Bind(wx.EVT_CHECKBOX, self.onPreviewCheckboxChanged)
-        imgPreview = dynctrl.DynamicBitmap(self, self.project, "previewImage", False, size=(150,150))
-        imgPreview.SetScaleMode(wx.StaticBitmap.Scale_Fill)
         if isinstance(project, JuliaProject):
+            gridsizer4 = wx.FlexGridSizer(1, gap=(5, 5))
             btnRandomCxy = wx.Button(self, label=_("Random Cx & Cy"), size=(pw, 18))
             btnRandomCxy.Bind(wx.EVT_BUTTON, self.onRandomCxy)
             gridsizer4.Add(btnRandomCxy, 1)
-        gridsizer4.Add(chkPreview, 1)
-        gridsizer4.Add(imgPreview, 1)
-        
-        self.sizer.Add(gridsizer4, 1)
+            self.sizer.Add(gridsizer4, 1)
 
         for c in self.GetChildren():
             self.styler.select("Anything:normal", c) 
@@ -239,12 +220,6 @@ class ProjectPropertiesPanel(ProjectPanel):
         e.Skip()
         w,h = self.GetSize()
         self.Refresh(rect=(0,0,w,h))
-
-    def onPreviewCheckboxChanged(self, e):
-        obj = e.GetEventObject()
-        if obj.IsChecked():
-            StartCoroutine(self.controller.startPreview, self)
-        e.Skip()
 
     def onReset(self, e):
         self.project.reset()

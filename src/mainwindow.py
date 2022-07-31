@@ -63,6 +63,7 @@ RESOURCE_LIST = {
     ID_PROJECT_HOME: RESOURCES+"/home.png",
     ID_PROJECT_MAKE_ROOT: RESOURCES+"/upload.png",
     ID_PROJECT_DELETE_BRANCH: RESOURCES+"/delete.png",
+    ID_FILE_NEW_PROJECT: RESOURCES+"/add.svg",
     ID_PROJECT_EXPLORER: RESOURCES+"/tree.svg",
     ID_PROJECT_PROPERTIES: RESOURCES+"/ballot.svg",
 }
@@ -97,15 +98,18 @@ class MainWindow(wx.Frame):
         self.SetSizer(self.sizer)
         hbox = wx.BoxSizer(wx.HORIZONTAL)
 
+        self.createPnl = self.constructCreatePanel((310,2000))
+
         self.configPnl = ProjectPropertiesPanel(self, self.controller, size=(310,2000), name="properties")
         self.configPnl.SetMaxSize((310,2000))
         self.explorerPnl = ProjectExplorerPanel(self, self.controller, size=(310,2000), name="explorer")
         self.explorerPnl.SetMaxSize((310,2000))
         self.tabctrl = wxdyn.TabCtrl(self)
         self.tabctrl.SetForegroundColour(styles["ForegroundColour"])
+        self.tabctrl.addTab(self.createPnl, "", svg=self.getResource(ID_FILE_NEW_PROJECT))
         self.tabctrl.addTab(self.configPnl, "", svg=self.getResource(ID_PROJECT_PROPERTIES))
         self.tabctrl.addTab(self.explorerPnl, "", svg=self.getResource(ID_PROJECT_EXPLORER))
-        self.tabctrl.selectTab("properties")
+        self.tabctrl.selectTab("create")
 
         self.ResultPnl = ResultPanel(self, self.controller, style=wx.SUNKEN_BORDER)
         self.ResultPnl.Bind(zoom.EVT_IMAGE_UPDATED, self.onImageUpdated)
@@ -149,6 +153,7 @@ class MainWindow(wx.Frame):
 
         #wx.PostEvent(self, wx.MenuEvent(wx.wxEVT_MENU, ID_FILE_NEW_PROJECT_MANDELBROTPROJECT))
 
+
         self.Show()
 
 
@@ -184,24 +189,46 @@ class MainWindow(wx.Frame):
         toolbar.AddTool(id, label, self.getToolBitmap(id), self.getToolBitmap(id, False), 
             wx.ITEM_NORMAL, shortHelp if shortHelp else label, longHelp, None)
 
+    def constructCreatePanel(self, size):
+        pnl = wx.Panel(self, size=size, name="create")
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        pnl.SetSizer(vbox)
+        w,h=size
+        gridsizer = wx.FlexGridSizer(1, gap=(5, 5))
+        btnNewMandelbrot = wxdyn.Button(pnl, label=_("Mandelbrot project"), svg=self.getResource(ID_FILE_NEW_PROJECT), size=(w*0.8, 30), style=wx.CENTER)
+        btnNewJulia = wxdyn.Button(pnl, label=_("Julia project"), svg=self.getResource(ID_FILE_NEW_PROJECT), size=(w*0.8, 30), style=wx.CENTER)
+        gridsizer.Add(btnNewMandelbrot, 1)
+        gridsizer.Add(btnNewJulia, 1)
+        btnNewMandelbrot.Bind(wxdyn.EVT_BUTTON_PRESSED, self.onUserNewMandelbrotProject)
+        btnNewJulia.Bind(wxdyn.EVT_BUTTON_PRESSED, self.onUserNewJuliaProject)
+        vbox.AddSpacer(40)
+        vbox.Add(gridsizer, 1, flag=wx.ALIGN_CENTER_HORIZONTAL)
+        pnl.SetAutoLayout(True)
+        pnl.SetMaxSize((310,2000))
+        vbox.Layout()
+        self.styler.select("Anything:normal", pnl) 
+        for c in pnl.GetChildren():
+            self.styler.select("Anything:normal", c) 
+        return pnl
+
     def constructToolbar(self):
         self.toolBar = self.CreateToolBar()
 
-        self.addTool(self.toolBar, ID_FILE_OPEN_PROJECT, "Open project")
+        self.addTool(self.toolBar, ID_FILE_OPEN_PROJECT, _("Open project"))
 
-        self.addTool(self.toolBar, ID_FILE_SAVE_PROJECT, "Save project")
+        self.addTool(self.toolBar, ID_FILE_SAVE_PROJECT, _("Save project"))
         self.toolBar.AddSeparator()
-        self.addTool(self.toolBar, ID_PROJECT_SELECT_SOURCEIMAGE, "Select image...")
-        self.addTool(self.toolBar, ID_PROJECT_GENERATE, "Generate")
-        self.addTool(self.toolBar, ID_PROJECT_RESET, "Reset")
-        self.addTool(self.toolBar, ID_PROJECT_FIT_IMAGE, "Fit image to frame size")
+        self.addTool(self.toolBar, ID_PROJECT_SELECT_SOURCEIMAGE, _("Select image..."))
+        self.addTool(self.toolBar, ID_PROJECT_GENERATE, _("Generate"))
+        self.addTool(self.toolBar, ID_PROJECT_RESET, _("Reset"))
+        self.addTool(self.toolBar, ID_PROJECT_FIT_IMAGE, _("Fit image to frame size"))
         self.toolBar.AddSeparator()
-        self.addTool(self.toolBar, ID_PROJECT_SELECT_ZOOM_MODE, "Zoom mode")
-        self.addTool(self.toolBar, ID_PROJECT_SELECT_FINISH_MODE, "Finish mode")
-        self.addTool(self.toolBar, ID_PROJECT_HOME, "Go to home area")
-        self.addTool(self.toolBar, ID_PROJECT_UP, "Go to parent area")
-        self.addTool(self.toolBar, ID_PROJECT_MAKE_ROOT, "Make current area root")
-        self.addTool(self.toolBar, ID_PROJECT_DELETE_BRANCH, "Remove the current area and all area's behind it")
+        self.addTool(self.toolBar, ID_PROJECT_SELECT_ZOOM_MODE, _("Zoom mode"))
+        self.addTool(self.toolBar, ID_PROJECT_SELECT_FINISH_MODE, _("Finish mode"))
+        self.addTool(self.toolBar, ID_PROJECT_HOME, _("Go to home area"))
+        self.addTool(self.toolBar, ID_PROJECT_UP, _("Go to parent area"))
+        self.addTool(self.toolBar, ID_PROJECT_MAKE_ROOT, _("Make current area root"))
+        self.addTool(self.toolBar, ID_PROJECT_DELETE_BRANCH, _("Remove the current area and all area's behind it"))
         
         self.toolBar.Realize()
 
@@ -210,33 +237,33 @@ class MainWindow(wx.Frame):
     def constructMenu(self):
         self.menuBar = wx.MenuBar()
         debugMenu = wx.Menu()
-        debugMenu.Append(ID_DEBUG_SHOWINSPECTIONTOOL, "&Inspection tool", "Show the WX Inspection Tool")
+        debugMenu.Append(ID_DEBUG_SHOWINSPECTIONTOOL, _("&Inspection tool"), _("Show the WX Inspection Tool"))
         fileMenu = wx.Menu()
         
         newProjectMenu = wx.Menu()
-        newProjectMenu.Append(ID_FILE_NEW_PROJECT_MANDELBROTPROJECT, "new &Mandelbrot Project", "Create new Mandelbrot Project")
-        newProjectMenu.Append(ID_FILE_NEW_PROJECT_JULIAPROJECT, "new &Julia Project", "Create new Julia Project")
-        fileMenu.AppendSubMenu(newProjectMenu, "&New")
-        fileMenu.Append(ID_FILE_SAVE_PROJECT, "&Save project", "Save current project")
-        fileMenu.Append(ID_FILE_SAVE_PROJECT_AS, "&Save project as...", "Save current project under a new name")
-        fileMenu.Append(ID_FILE_OPEN_PROJECT, "&Open project", "Open project")
-        fileMenu.Append(ID_FILE_SAVE_GENERATED_IMAGE, "Save &generated image", "Save generated image")
-        fileMenu.Append(ID_FILE_EXIT, "E&xit", "Exit")
+        newProjectMenu.Append(ID_FILE_NEW_PROJECT_MANDELBROTPROJECT, _("new &Mandelbrot Project"), _("Create new Mandelbrot Project"))
+        newProjectMenu.Append(ID_FILE_NEW_PROJECT_JULIAPROJECT, _("new &Julia Project"), _("Create new Julia Project"))
+        fileMenu.AppendSubMenu(newProjectMenu, _("&New"))
+        fileMenu.Append(ID_FILE_SAVE_PROJECT, _("&Save project"), _("Save current project"))
+        fileMenu.Append(ID_FILE_SAVE_PROJECT_AS, _("&Save project as..."), _("Save current project under a new name"))
+        fileMenu.Append(ID_FILE_OPEN_PROJECT, _("&Open project"), _("Open project"))
+        fileMenu.Append(ID_FILE_SAVE_GENERATED_IMAGE, _("Save &generated image"), _("Save generated image"))
+        fileMenu.Append(ID_FILE_EXIT, _("E&xit"), _("Exit"))
 
         projectMenu = wx.Menu()
-        projectMenu.Append(ID_PROJECT_SELECT_SOURCEIMAGE, "Se&lect source image", "Select the source image for this project")
-        projectMenu.Append(ID_PROJECT_RESET, "&Reset", "Reset to default values")
-        projectMenu.Append(ID_PROJECT_GENERATE, "&Generate", "Generate")
-        projectMenu.Append(ID_PROJECT_FIT_IMAGE, "Scale image to f&it", "Scale image to fit")
-        projectMenu.Append(ID_PROJECT_SELECT_ZOOM_MODE, "Select &Zoom Mode", "Select Zoom Mode")
-        projectMenu.Append(ID_PROJECT_SELECT_FINISH_MODE, "Select &Finish Mode", "Select Finish Mode")
-        projectMenu.Append(ID_PROJECT_HOME, "Go &home (to top view)", "Go to top view")
-        projectMenu.Append(ID_PROJECT_UP, "Go &up (to parent view)", "Go to parent view")
-        projectMenu.Append(ID_PROJECT_MAKE_ROOT, "Make r&oot", "Make current area the new root")
-        projectMenu.Append(ID_PROJECT_DELETE_BRANCH, "&Delete this branch", "Delete this branch")
-        self.menuBar.Append(fileMenu, "&File")
-        self.menuBar.Append(projectMenu, "&Project")
-        self.menuBar.Append(debugMenu, "&Debug")
+        projectMenu.Append(ID_PROJECT_SELECT_SOURCEIMAGE, _("Se&lect source image"), _("Select the source image for this project"))
+        projectMenu.Append(ID_PROJECT_RESET, _("&Reset"), _("Reset to default values"))
+        projectMenu.Append(ID_PROJECT_GENERATE, _("&Generate"), _("Generate"))
+        projectMenu.Append(ID_PROJECT_FIT_IMAGE, _("Scale image to f&it"), _("Scale image to fit"))
+        projectMenu.Append(ID_PROJECT_SELECT_ZOOM_MODE, _("Select &Zoom Mode"), _("Select Zoom Mode"))
+        projectMenu.Append(ID_PROJECT_SELECT_FINISH_MODE, _("Select &Finish Mode"), _("Select Finish Mode"))
+        projectMenu.Append(ID_PROJECT_HOME, _("Go &home (to top view)"), _("Go to top view"))
+        projectMenu.Append(ID_PROJECT_UP, _("Go &up (to parent view)"), _("Go to parent view"))
+        projectMenu.Append(ID_PROJECT_MAKE_ROOT, _("Make r&oot"), _("Make current area the new root"))
+        projectMenu.Append(ID_PROJECT_DELETE_BRANCH, _("&Delete this branch"), _("Delete this branch"))
+        self.menuBar.Append(fileMenu, _("&File"))
+        self.menuBar.Append(projectMenu, _("&Project"))
+        self.menuBar.Append(debugMenu, _("&Debug"))
         self.SetMenuBar(self.menuBar)
 
     def activateTools(self, group):
@@ -246,10 +273,12 @@ class MainWindow(wx.Frame):
     def onMsgNewProject(self, payload):
         self.activateTools(ID_GROUP_PROJECTLOADED)
         self.controller.clearProjectModifications()
+        self.tabctrl.selectTab("properties")
 
     def onMsgOpenProject(self, payload):
         self.activateTools(ID_GROUP_PROJECTLOADED)
         self.controller.clearProjectModifications()
+        self.tabctrl.selectTab("properties")
 
     def onMsgProjectSaved(self, payload):
         self.controller.clearProjectModifications()
