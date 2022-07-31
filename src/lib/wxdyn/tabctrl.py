@@ -46,11 +46,11 @@ class TabButton(wx.Panel):
     def drawBackground(self, dc):
         w,h = self.GetSize()
         if self.__selected__:
-            self.paintStyler.select("TabButton:selected", dc)
+            self.paintStyler.select("Button:selected", dc)
         elif self.__mouseOver__:
-            self.paintStyler.select("TabButton:mouseOver", dc)
+            self.paintStyler.select("Button:mouseOver", dc)
         else:
-            self.paintStyler.select("TabButton:normal", dc)
+            self.paintStyler.select("Button:normal", dc)
         dc.DrawRectangle((0, 0, w, h))
 
     def drawHighlight(self, dc):

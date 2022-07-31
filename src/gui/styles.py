@@ -41,12 +41,12 @@ def init():
     )
 
     """
-    Style definitions for TabButton
+    Style definitions for Button
     """
     
     styleCat.addStyle(
-        styleName = "TabButton:normal", 
-        basedOn = "TabButton:normal",
+        styleName = "Button:normal", 
+        basedOn = "Button:normal",
         elements = [
             wx.Brush("#444444", style=wx.BRUSHSTYLE_SOLID),
             wx.Pen("#444444", style=wx.PENSTYLE_SOLID),
@@ -54,8 +54,8 @@ def init():
     )
 
     styleCat.addStyle(
-        styleName = "TabButton:mouseOver", 
-        basedOn = "TabButton:normal",
+        styleName = "Button:mouseOver", 
+        basedOn = "Button:normal",
         elements = [
             wx.Brush("#555555", style=wx.BRUSHSTYLE_SOLID),
             wx.Pen("#555555", style=wx.PENSTYLE_SOLID),
@@ -63,8 +63,8 @@ def init():
     )
 
     styleCat.addStyle(
-        styleName = "TabButton:selected", 
-        basedOn = "TabButton:normal",
+        styleName = "Button:selected", 
+        basedOn = "Button:normal",
         elements = [
             wx.Brush("#333333", style=wx.BRUSHSTYLE_SOLID),
             wx.Pen("#333333", style=wx.PENSTYLE_SOLID),
@@ -73,7 +73,7 @@ def init():
 
     styleCat.addStyle(
         styleName = "TabButton:highlight", 
-        basedOn = "TabButton:normal",
+        basedOn = "Button:normal",
         elements = [
             wx.Brush("#FFFFFF", style=wx.BRUSHSTYLE_SOLID),
             wx.Pen("#FFFFFF", style=wx.PENSTYLE_SOLID),
