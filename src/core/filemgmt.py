@@ -1,5 +1,7 @@
 from gui import projectgallery
 import os
+import json
+import time
 import lib.wxdyn.log as  log
 
 def makeDirs(dir):
@@ -11,6 +13,11 @@ def nextDirName(dir):
     nm = "{d}_{i}"
     while os.path.exists(nm.format(d=dir, i=i)): i+=1
     return nm.format(d=dir, i=i)
+
+def getFileTimes(path):
+    tc = os.path.getctime(path)
+    tm = os.path.getmtime(path)
+    return(time.ctime(tc), time.ctime(tm))
 
 def toPath(path, fileName, mustExist=True):
     log.debug(function=toPath, args=(path, fileName))
@@ -27,18 +34,20 @@ class FileOperation:
         self.path = path
 
     def do(self, io, handler):
+        result = None
         try:
-            handler(io)
+            result = handler(io)
         except IOError:
             log.error("IOError", function=self.startWriteSession)
         finally:
             io.close()
+            return result
 
     def write(self, writeHandler):
-        self.do(open(self.path, "w"), writeHandler)
+        return self.do(open(self.path, "w"), writeHandler)
 
     def read(self, readHandler):
-         self.do(open(self.path, "r"), readHandler)
+        return self.do(open(self.path, "r"), readHandler)
 
 
 class ProjectStorage:
@@ -80,16 +89,16 @@ class ProjectStorage:
         return toPath(self.path, fileName, mustExist)
 
     # creates a write session for the current focus
-    def write(self, fileName, doWrite):
-        if self.path == None: return
+    def write(self, fileName, writer):
+        if self.path == None: return None
         fo = FileOperation(self.toPath(fileName, False))
-        fo.write(doWrite)
+        return fo.write(writer)
 
     # creates a read session for the current focus
-    def read(self, fileName, doRead):
-        if self.path == None: return
+    def read(self, fileName, reader):
+        if self.path == None: return None
         fo = FileOperation(self.toPath(fileName))
-        fo.read(doRead)
+        return fo.read(reader)
 
     def validProject(self, prjPath):
         log.debug(function=self.validProject, args=prjPath)
@@ -99,6 +108,16 @@ class ProjectStorage:
         if not os.path.exists(prjPath+os.sep+"properties.json"): return False
         return True
 
+    def getProjectStorageData(self, prjPath=None):
+        p = prjPath if prjPath!=None else self.getPath()
+        if os.path.exists(p+os.sep+"properties.json"):
+            return (p, *getFileTimes(p+os.sep+"properties.json"))
+        else:
+            return (p, *getFileTimes(p))
+
+    '''
+    Returns a list of valid project paths, including creation and modification times
+    '''
     def getProjects(self):
         projects = {}
         list = os.listdir(self.rootPath)
@@ -108,6 +127,17 @@ class ProjectStorage:
                 log.debug("item: ", item, function=self.getProjects)
                 projects[item] = prjPath
         return projects
+
+    def propertiesLoader(self, io):
+        log.debug(function=self.propertiesLoader)
+        return json.load(io)
+
+    def loadProperties(self):
+        prjPath, ct, mt = self.getProjectStorageData()
+        prjProps = self.read("properties.json", self.propertiesLoader)
+        prjProps["created"] = ct
+        prjProps["modified"] = mt
+        return prjProps
 
 
 

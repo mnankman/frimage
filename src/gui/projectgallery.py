@@ -77,6 +77,7 @@ class ProjectGalleryFrame(wx.Frame):
             bitmap=self.loadImage(bmpPath).Rescale(140,140).ConvertToBitmap(), 
             name=name, size=(150, 150), style=wx.BORDER_NONE)
         bmpBtn.Bind(wx.EVT_BUTTON, self.onRead)
+        bmpBtn.Bind(wx.EVT_LEFT_DCLICK, self.onOpen)
         lbl = wx.StaticText(tilePnl, label=name)
         self.applyStyles(lbl)
         self.applyStyles(bmpBtn)
@@ -110,42 +111,37 @@ class ProjectGalleryFrame(wx.Frame):
         self.scrollsizer = wx.FlexGridSizer(cols=5, hgap=5, vgap=5)
         self.scroller.SetSizer(self.scrollsizer)
         projects = self.storage.getProjects()
-        for name, path in projects.items():
-            tile = self.constructProjectTile(name, path)
+        for name, prjStorageData in projects.items():
+            tile = self.constructProjectTile(name, prjStorageData)
             self.scrollsizer.Add(tile, 1)
         self.scrollsizer.Layout()
+        self.scroller.SetScrollRate(5,5)
 
-    def constructProperties(self, data):        
-        for item, val in data.items():
-            if not item in ["elements"]:
-                attrTxt = wx.StaticText(self.selPrjPnl, label=item, style=wx.EXPAND)
-                valueTxt = wx.StaticText(self.selPrjPnl, label=str(val), style=wx.EXPAND)
-                self.infoGrid.Add(attrTxt, 1)
-                self.infoGrid.Add(valueTxt, 1)
-        
-
-    def readProperties(self, io):
-        self.infoGrid.Clear()
-        for c in self.selPrjPnl.GetChildren(): 
-            if c!=self.btnOpen: c.Destroy()
-        data = json.load(io)
-        self.constructProperties(data)
-        txt = wx.StaticText(self.selPrjPnl, label="source", style=wx.EXPAND)
-        src = wx.BitmapButton(self.selPrjPnl, 
-            bitmap=self.loadImage(self.storage.toPath("source.png")).Rescale(140,140).ConvertToBitmap(), 
-            size=(150, 150), style=wx.BORDER_NONE)
-        self.infoGrid.Add(txt, 1)
-        self.infoGrid.Add(src, 1)
-        self.infoGrid.Layout()
-
-    def read(self):
-        self.storage.read("properties.json", self.readProperties)
+    def constructProperties(self, prjProps):  
+        if prjProps:
+            for c in self.selPrjPnl.GetChildren(): 
+                if c!=self.btnOpen: c.Destroy()
+            self.infoGrid.Clear()
+            for item, val in prjProps.items():
+                if not item in ["elements"]:
+                    attrTxt = wx.StaticText(self.selPrjPnl, label=item, style=wx.EXPAND)
+                    valueTxt = wx.StaticText(self.selPrjPnl, label=str(val), style=wx.EXPAND)
+                    self.infoGrid.Add(attrTxt, 1)
+                    self.infoGrid.Add(valueTxt, 1)
+            txt = wx.StaticText(self.selPrjPnl, label="source", style=wx.EXPAND)
+            src = wx.BitmapButton(self.selPrjPnl, 
+                bitmap=self.loadImage(self.storage.toPath("source.png")).Rescale(140,140).ConvertToBitmap(), 
+                size=(150, 150), style=wx.BORDER_NONE)
+            self.infoGrid.Add(txt, 1)
+            self.infoGrid.Add(src, 1)
+            self.infoGrid.Layout()
 
     def onRead(self, e):
         btn = e.GetEventObject()
         nm = btn.GetName()
         self.storage.setName(nm)
-        self.read()
+        prjProps = self.storage.loadProperties()
+        self.constructProperties(prjProps)
 
     def onOpen(self, e):
         log.debug(function=self.onOpen, args=e.GetEventObject().GetName())
@@ -154,3 +150,17 @@ class ProjectGalleryFrame(wx.Frame):
 
     def onUserCloseWindow(self, e):
         self.Hide()
+
+    def constructDummyTile(self, i):
+        return self.constructTile("dummy"+str(i), RESOURCES+"/icon.png")
+
+    def loadDummyGallery(self):
+        self.scrollsizer = wx.FlexGridSizer(cols=5, hgap=5, vgap=5)
+        self.scrollsizer.Clear()
+        for i in range(60):
+            self.scrollsizer.Add(self.constructDummyTile(i), 1)
+        self.scrollsizer.Layout()
+        self.scroller.SetSizer(self.scrollsizer)
+        self.scroller.SetScrollRate(5,5)
+
+    
