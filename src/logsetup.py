@@ -12,6 +12,7 @@ LOGGER_LEVELS_DEBUG = {
     "core.model.model": logging.ERROR,
     "lib.wxdyn.pubsub": logging.ERROR,
     "lib.wxdyn.styler": logging.ERROR,
+    "PIL.PngImagePlugin": logging.ERROR,
 }
 
 LOGGER_LEVELS_PRODUCTION = {
