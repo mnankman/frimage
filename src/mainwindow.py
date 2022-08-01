@@ -322,6 +322,7 @@ class MainWindow(wx.Frame):
         e.Skip()
 
     def onUserGenerate(self, e):
+        #TODO: refactor this temporary construction. It's ugly. In stead statusbar should listen for the event.
         self.statusBar.onGenerate(e)
         e.Skip()
 
