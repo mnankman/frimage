@@ -48,9 +48,11 @@ class Project(wxd.ModelObject):
         
     def setWidth(self, w):
         self.__width = w
+        self.setModified()
 
     def setHeight(self, h):
         self.__height = h
+        self.setModified()
 
     def setSize(self, size):
         self.__width, self.__height = size

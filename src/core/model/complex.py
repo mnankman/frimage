@@ -34,6 +34,9 @@ class Area(wxd.ModelObject):
             rect = None
         return rect
 
+    def getShape(self):
+        return (self.__xb - self.__xa, self.__yb - self.__ya)
+
     def setXa(self, v): 
         fv = float(v) if v!=None else None
         log.debug(function=self.setXa, args=fv)
@@ -67,12 +70,24 @@ class Area(wxd.ModelObject):
         self.setModified()
 
     def setRect(self, rect):
+        log.debug(function=self.setRect, args=rect)
         x,y,w,h = rect
         self.__xa = x
         self.__xb = x+w
         self.__ya = y
         self.__yb = y+h
         self.setModified()
+
+    def getAdjusted(self, targetSize):
+        log.debug(function=self.getAdjusted, args=targetSize)
+        tw,th = targetSize
+        ax,ay,aw,ah = self.getRect()
+        tr = tw/th
+        ar = aw/ah
+        if ar<tr:
+            return(ax, ax+ah*tr, ay, ay+aw)
+        else:
+            return (ax, ax+aw, ay, ay+aw/tr)
 
     def toString(self):
         s =  self.getId() + ": " + str((self.__xa, self.__xb, self.__ya, self.__yb))
@@ -412,7 +427,7 @@ class MandelbrotProject(ComplexProject):
         generator.setup(
             size=self.getSize(), 
             reverseColors=self.getProjectSource().getFlipGradient(), 
-            area=self.currentSet.getArea().getAll()
+            area=self.currentSet.getArea().getAdjusted(self.getSize())
         )
 
     def prePreview(self, generator, **setup):
@@ -492,7 +507,7 @@ class JuliaProject(ComplexProject):
         generator.setup(
             size=self.getSize(), 
             reverseColors=self.getProjectSource().getFlipGradient(), 
-            area=self.currentSet.getArea().getAll(),
+            area=self.currentSet.getArea().getAdjusted(self.getSize()),
             cxy=self.currentSet.getCxy().getCxy()
         )
     
