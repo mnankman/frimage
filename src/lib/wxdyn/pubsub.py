@@ -47,6 +47,7 @@ class Publisher:
             MessageQueue.processMessages(messages)
 
 class MessageQueue:
+    STATINTERVAL = 50
     MAXQUEUESIZE = 20
     instance = None
     asyncOff = False
@@ -76,8 +77,6 @@ class MessageQueue:
                 self.queue.extend(messages)
                 ql = len(self.queue)
                 if ql>self.maxql: self.maxql = ql 
-                if self.sent % 20 == 0: 
-                    log.trace(self.getStatsStr())
 
         def hasMessages(self):
             return (len(self.queue)>0)
@@ -103,6 +102,9 @@ class MessageQueue:
                         raise re
                     except AttributeError as ae:
                         log.error(ae, function = self.handleNextMessage)
+                    
+                if self.sent % MessageQueue.STATINTERVAL == 0: 
+                        log.trace(self.getStatsStr())
  
     # class method for obtaining the singleton instance of __MessageQueue__
     def getInstance(asyncOff=False):

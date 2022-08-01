@@ -2,21 +2,23 @@ import lib.wxdyn.log as log
 import logging
 
 LOGGER_LEVELS_DEBUG = {
-    "lib.wxdyn.persistentobject": logging.INFO,
-    "lib.wxdyn.modelobject": logging.INFO,
+    "lib.wxdyn.persistentobject": logging.ERROR,
+    "lib.wxdyn.modelobject": logging.ERROR,
     "gui.zoompanel": logging.ERROR,
     "gui.projectgallery": logging.ERROR,
-    "gui.projectpanels": logging.DEBUG,
+    "gui.projectpanels": logging.ERROR,
     "core.filemgmt": logging.ERROR,
-    "core.model.complex": logging.DEBUG,
+    "core.model.complex": logging.INFO,
     "core.model.project": logging.INFO,
-    "core.model.model": logging.DEBUG,
+    "core.model.projectsource": logging.INFO,
+    "core.model.model": logging.INFO,
     "lib.wxdyn.pubsub": logging.INFO,
     "lib.wxdyn.styler": logging.ERROR,
     "lib.wxdyn.tabctrl": logging.ERROR,
     "lib.wxdyn.dynctrl": logging.INFO,
     "PIL.PngImagePlugin": logging.ERROR,
     "asyncio": logging.ERROR,
+    "lib.imgbox": logging.ERROR,
 }
 
 LOGGER_LEVELS_PRODUCTION = {
