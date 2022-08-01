@@ -125,6 +125,7 @@ class GeneratedSet(wxd.ModelObject):
         self.__generatedSets__ = []
 
     def remove(self, genset):
+        log.trace(function=self.remove, args=genset.getFullId())
         self.__generatedSets__.remove(genset)
         self.setModified()
 
@@ -318,24 +319,25 @@ class ComplexProject(Project):
             self.setModified()
 
     def remove(self):
-        current = self.getCurrentSet()
+        log.trace(function=self.remove, args=self.getFullId())
+        toRemove = self.getCurrentSet() 
         root = self.getRootSet()
-        if current == root:
+        if toRemove == root:
             self.initRootSet()
             self.currentSet = self.rootSet
         else:
-            self.currentSet = current.getParent()
-        self.currentSet.remove(current)
-        del current
+            self.currentSet = toRemove.getParent()
+        self.currentSet.remove(toRemove)
+        toRemove.destroy()
         self.setModified()
 
     def makeRoot(self):
-        current = self.getCurrentSet()
-        root = self.getRootSet()
-        if current != root:
-            current.setParent(self)
-            self.rootSet = current
-            del root
+        toBecomeRoot = self.getCurrentSet()
+        oldRoot = self.getRootSet()
+        if toBecomeRoot != oldRoot:
+            toBecomeRoot.setParent(self)
+            self.rootSet = toBecomeRoot
+            oldRoot.destroy()
             self.setModified()
 
     def setProjectSourceImage(self, path):

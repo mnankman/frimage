@@ -26,7 +26,13 @@ class Model(wxd.Publisher):
     PROJECT_TYPE_JULIA = 1
     PROJECT_TYPE_MANDELBROT = 2
     VALID_PROJECT_TYPES = [PROJECT_TYPE_JULIA, PROJECT_TYPE_MANDELBROT]
-    EVENTS = ["msg_new_project", "msg_generate_complete", "msg_open_project", "msg_project_saved", "msg_sourceimage_selected"]
+    EVENTS = [
+        "msg_new_project", 
+        "msg_generate_complete", 
+        "msg_open_project", 
+        "msg_project_saved", 
+        "msg_sourceimage_selected",
+    ]
     def __init__(self):
         self.__application__ = Application()
         self.__currentProject__ = None
@@ -105,13 +111,11 @@ class Model(wxd.Publisher):
         return self.getCurrentProject().getProjectSourceImage()
 
     def selectProjectSourceImage(self, path):
-        log.trace(function=self.selectProjectSourceImage, args=path)
         if self.getCurrentProject():
             self.getCurrentProject().setProjectSourceImage(path)
             self.dispatch("msg_sourceimage_selected", {"source": self.getCurrentProject().getProjectSource().getSource()})
 
     def clearProjectTouch(self):
-        log.trace(function=self.clearProjectTouch)
         self.getCurrentProject().setTouched(False)
 
     def clearProjectModifications(self):

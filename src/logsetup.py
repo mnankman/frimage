@@ -3,17 +3,18 @@ import logging
 
 LOGGER_LEVELS_DEBUG = {
     "lib.wxdyn.persistentobject": logging.INFO,
-    "lib.wxdyn.modelobject": logging.ERROR,
+    "lib.wxdyn.modelobject": logging.INFO,
     "gui.zoompanel": logging.ERROR,
     "gui.projectgallery": logging.ERROR,
-    "gui.projectpanels": logging.ERROR,
+    "gui.projectpanels": logging.DEBUG,
     "core.filemgmt": logging.ERROR,
-    "core.model.complex": logging.ERROR,
+    "core.model.complex": logging.DEBUG,
     "core.model.project": logging.INFO,
     "core.model.model": logging.DEBUG,
-    "lib.wxdyn.pubsub": logging.ERROR,
+    "lib.wxdyn.pubsub": logging.INFO,
     "lib.wxdyn.styler": logging.ERROR,
     "lib.wxdyn.tabctrl": logging.ERROR,
+    "lib.wxdyn.dynctrl": logging.INFO,
     "PIL.PngImagePlugin": logging.ERROR,
     "asyncio": logging.ERROR,
 }

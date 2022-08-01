@@ -5,7 +5,7 @@ import wx.svg
 from wxasync import WxAsyncApp
 from wx.lib.inspection import InspectionTool
 
-from builtins import _
+from lib.i18n import i18n
 import lib.wxdyn.log as log
 import lib.wxdyn as wxdyn
 
@@ -358,38 +358,29 @@ class MainWindow(wx.Frame):
         e.Skip()
     
     def onProjectUp(self, e):
-        log.debug(function=self.onProjectUp)
-        self.controller.clearProjectModifications()
         self.controller.up()
         e.Skip()
 
     def onProjectHome(self, e):
-        log.debug(function=self.onProjectHome)
-        self.controller.clearProjectModifications()
         self.controller.home()
         e.Skip()
 
     def onProjectMakeRoot(self, e):
-        log.debug(function=self.onProjectMakeRoot)
         if dlg.message(_("This will make this area the root of the project and remove everything above this point. Are you sure?"), wx.YES_NO) == wx.ID_YES:
             self.controller.makeRoot()
         e.Skip()
 
     def onProjectDeleteBranch(self, e):
-        log.debug(function=self.onProjectDeleteBranch)
         if dlg.message(_("This will remove this area and all area's after it. Are you sure?"), wx.YES_NO) == wx.ID_YES:
             self.controller.remove()
         e.Skip()
 
     def onDiveDown(self, e):
-        log.debug(function=self.onDiveDown)
-        self.controller.clearProjectModifications()
         self.controller.down(e.set)
         e.Skip()
 
     def onImageUpdated(self, e):
-        log.debug(function=self.onImageUpdated)
-        self.controller.clearProjectModifications()
+        #self.controller.clearProjectModifications()
         e.Skip()
 
     def onUserProjectFitImage(self, e):

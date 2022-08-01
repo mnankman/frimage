@@ -1,6 +1,5 @@
 from PIL import Image
 import wx
-from builtins import _
 
 import lib.wxdyn.log as  log
 import lib.wxdyn as wxd

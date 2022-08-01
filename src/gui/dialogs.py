@@ -1,6 +1,5 @@
 import wx
 import lib.wxdyn.log as  log
-from builtins import _
 
 #TODO: make an About-dialog 
 

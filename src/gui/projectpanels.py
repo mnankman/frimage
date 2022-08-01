@@ -17,6 +17,7 @@ RESOURCES="resource"
 class ProjectPanel(wx.Panel):
     def __init__(self, parent, controller, **kw):
         super(ProjectPanel, self).__init__(parent, **kw)   
+        self.project = None
         self.styler = wxdyn.WindowStyler()
         self.styler.select("Anything:normal", self) 
         self.controller = controller
@@ -27,18 +28,31 @@ class ProjectPanel(wx.Panel):
     def construct(self, project):
         pass
 
+    def childObjectModified(self):
+        pass
+
+    def setProject(self, prj):
+        if prj != self.project:
+            self.project = prj
+            prj.subscribe(self, "msg_object_modified", self.onUpdate)
+            self.construct(prj)
+
+    def getProject(self):
+        return self.project
+
     def onUpdate(self, payload):
-        log.debug(function=self.onUpdate, args=payload)
         if "project" in payload.keys():            
             prj = payload["project"]
         elif "object" in payload.keys():
             prj = payload["object"]
         else:
             return
-        log.debug(function=self.onUpdate, args=prj.getFullId())
-        self.construct(prj)
-        if prj != self.controller.getCurrentProject():
-            prj.subscribe(self, "msg_object_modified", self.onUpdate)
+
+        if "modified" in payload.keys():
+            self.childObjectModified()
+            
+        log.trace(function=self.onUpdate, args=prj.getFullId())
+        self.setProject(prj)
         self.Refresh()
 
 class StatusBar(ProjectPanel):
@@ -52,7 +66,6 @@ class StatusBar(ProjectPanel):
         
     def construct(self, project):
         log.debug(function=self.construct, args=project.getFullId())
-        self.project = project
         self.sizer.Clear(True)
         gridsizer = wx.FlexGridSizer(1,3,5,0)
         self.progressBar = progress.ProgressIndicator(self)
@@ -89,20 +102,27 @@ class ProjectExplorerPanel(ProjectPanel):
         self.SetAutoLayout(True)
         self.model.subscribe(self, "msg_generate_complete", self.onUpdate)
 
+    def childObjectModified(self):
+        log.debug(function=self.childObjectModified)
+        self.resetTree()
+
     def construct(self, project):
-        log.debug(function=self.construct, args=project.getFullId())
-        self.project = project
+        log.trace(function=self.construct, args=project.getFullId())
         self.sizer.Clear(True)
         self.projectTree = wx.TreeCtrl(self, wx.ID_ANY, size=self.GetSize(), style=wx.TR_HAS_BUTTONS)
         self.projectTree.Bind(wx.EVT_TREE_SEL_CHANGED, self.onTreeItemSelected)
         self.styler.select("Anything:normal", self.projectTree) 
+        self.resetTree()
+        self.sizer.Add(self.projectTree, 1)
+        self.sizer.Layout()
+
+    def resetTree(self):
+        self.projectTree.DeleteAllItems()
         rootset = self.project.getRootSet()
         rootItem = self.projectTree.AddRoot(self.project.getName(), data=self.project)
         rootsetItem = self.projectTree.AppendItem(rootItem, self.getItemLabel(rootset), data=rootset)
         self.constructTree(rootsetItem, rootset)
         self.projectTree.ExpandAll()
-        self.sizer.Add(self.projectTree, 1)
-        self.sizer.Layout()
 
     def getItemLabel(self, genset):
         lbl = "{} [{} x {}]"
@@ -139,7 +159,6 @@ class ProjectPropertiesPanel(ProjectPanel):
 
     def construct(self, project):
         self.styler.select("Anything:normal", self)
-        self.project = project
         self.area = self.project.getArea()
         self.projectSource = self.project.getProjectSource()
 
@@ -242,7 +261,6 @@ class ResultPanel(ProjectPanel):
         self.Bind(wx.EVT_SIZE, self.onResize)
 
     def construct(self, project):
-        self.project = project
         self.sizer.Clear(True)
         self.imZmPnl = zoompanel.ZoomPanel(self, self.project, "generatedImage")
         self.imZmPnl.Bind(zoompanel.EVT_IMAGE_UPDATED, self.onImageUpdated)
@@ -258,17 +276,14 @@ class ResultPanel(ProjectPanel):
         self.Refresh(rect=(0,0,w,h))
 
     def onImageUpdated(self, e):
-        log.debug(function=self.onImageUpdated)
         e.Skip()
         wx.PostEvent(self, e)
 
     def onAreaZoom(self, e):
-        log.debug(function=self.onAreaZoom)
         e.Skip()
         wx.PostEvent(self, e)
 
     def onDiveDown(self, e):
-        log.debug(function=self.onDiveDown)
         e.Skip()
         wx.PostEvent(self, e)
 

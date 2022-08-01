@@ -22,7 +22,7 @@ class DynamicCtrl:
             log.warning(e, function=self.__del__)
 
     def onUserValueChange(self, e):
-        log.trace(function=self.onUserValueChange, args=e)
+        log.debug(function=self.onUserValueChange, args=e)
         ctrl = e.GetEventObject()
         val = ctrl.GetValue()
         self.modelObject.setAttribute(self.attributeName, val)
@@ -52,10 +52,11 @@ class DynamicLabel(DynamicCtrl, wx.StaticText):
     def onModelObjectChange(self, payload):
         obj = payload["object"]
         attrVal = obj.getAttribute(self.attributeName)
-        if attrVal in self.valueMap:
-            self.SetLabel(str(self.valueMap[attrVal]))
-        else:
+        val = str(self.valueMap[attrVal]) if attrVal in self.valueMap else attrVal
+        try:
             self.SetLabel(str(attrVal))
+        except:
+            pass
 
 class DynamicTextCtrl(DynamicCtrl, wx.TextCtrl):
     def __init__(self, parent, modelObject, attributeName, **kw):
@@ -66,7 +67,10 @@ class DynamicTextCtrl(DynamicCtrl, wx.TextCtrl):
 
     def onModelObjectChange(self, payload):
         obj = payload["object"]
-        self.ChangeValue(str(obj.getAttribute(self.attributeName)))
+        try:
+            self.ChangeValue(str(obj.getAttribute(self.attributeName)))
+        except:
+            pass
 
 class DynamicSpinCtrl(DynamicCtrl, wx.SpinCtrl):
     def __init__(self, parent, modelObject, attributeName, **kw):
@@ -78,7 +82,10 @@ class DynamicSpinCtrl(DynamicCtrl, wx.SpinCtrl):
 
     def onModelObjectChange(self, payload):
         obj = payload["object"]
-        self.SetValue(int(obj.getAttribute(self.attributeName)))
+        try:
+            self.SetValue(int(obj.getAttribute(self.attributeName)))
+        except:
+            pass
 
 class DynamicCheckBox(DynamicCtrl, wx.CheckBox):
     def __init__(self, parent, modelObject, attributeName, **kw):

@@ -79,12 +79,15 @@ class Controller:
         self.model.load(self.ps)
 
     def home(self):
+        self.clearProjectModifications()
         self.model.home()
 
     def up(self):
+        self.clearProjectModifications()
         self.model.up()
 
     def down(self, genSet):
+        self.clearProjectModifications()
         self.model.down(genSet)
         
     def remove(self):

@@ -49,9 +49,12 @@ class ZoomPanel(wxd.DynamicCtrl, wx.Panel):
             self.__pilImage__ = Image.new("RGB", self.modelObject.getSize())  
         else:
             self.__pilImage__ = Image.new("RGB", self.GetSize())
-        self.SetSize(self.__pilImage__.size)
-        self.Refresh()
-        wx.PostEvent(self, ImageUpdatedEvent())
+        try:
+            self.SetSize(self.__pilImage__.size)
+            self.Refresh()
+            wx.PostEvent(self, ImageUpdatedEvent())
+        except:
+            pass
 
     def getImage(self):
         return self.__pilImage__
@@ -130,7 +133,6 @@ class ZoomPanel(wxd.DynamicCtrl, wx.Panel):
         if "modified" in payload:
             mods = obj.getModificationsFromPayload(payload)
             log.debug(var=("modifications in payload", mods), function=self.onModelObjectChange)
-        obj = payload["object"]
         pilImg = obj.getAttribute(self.attributeName)
         if pilImg != self.getImage():
             self.setImage(pilImg)

@@ -30,8 +30,11 @@ class ModelObject(PersistentObject, Publisher):
             parent.addChild(self)
 
     def __del__(self):
-        #Publisher.__del__(self)
-        #log.trace(function=self.__del__, args=self.getFullId())
+        log.trace(function=self.__del__, args=self.getFullId())
+        self.destroy()
+
+    def destroy(self):
+        Publisher.__destroy__(self)
         parent = self.getParent()
         if parent:
             parent.removeChild(self)
@@ -54,7 +57,7 @@ class ModelObject(PersistentObject, Publisher):
         if recursive:
             for c in self.getChildren():
                 c.clearModified(recursive)
-        log.debug(type(self), ".clearModified(", recursive, ") --> ", self.__modified__)
+        log.debug(function=self.clearModified, args=recursive, var=("self.__modified__", self.__modified__))
 
     def getParent(self):
         return self.__parent__
@@ -107,7 +110,6 @@ class ModelObject(PersistentObject, Publisher):
         self.dispatch("msg_object_modified", {"object": self, "modified": payload})
 
     def getModificationsFromPayload(self, payload):
-        log.debug(function=self.getModificationsFromPayload, args=payload)
         modifications = []
         if "object" in payload:
             obj = payload["object"]
