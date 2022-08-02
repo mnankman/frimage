@@ -108,12 +108,13 @@ class ProjectExplorerPanel(ProjectPanel):
 
     def construct(self, project):
         log.trace(function=self.construct, args=project.getFullId())
+        self.styler.select("Anything:normal", self)
         self.sizer.Clear(True)
-        self.projectTree = wx.TreeCtrl(self, wx.ID_ANY, size=self.GetSize(), style=wx.TR_HAS_BUTTONS)
+        self.projectTree = wx.TreeCtrl(self, wx.ID_ANY, style=wx.TR_HAS_BUTTONS)
         self.projectTree.Bind(wx.EVT_TREE_SEL_CHANGED, self.onTreeItemSelected)
         self.styler.select("Anything:normal", self.projectTree) 
         self.resetTree()
-        self.sizer.Add(self.projectTree, 1)
+        self.sizer.Add(self.projectTree, 1, flag=wx.EXPAND)
         self.sizer.Layout()
 
     def resetTree(self):
@@ -149,13 +150,10 @@ class ProjectExplorerPanel(ProjectPanel):
 class ProjectPropertiesPanel(ProjectPanel):
     def __init__(self, parent, controller, **kw):
         super(ProjectPropertiesPanel, self).__init__(parent, controller, **kw)
-
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.sizer)
-
-        self.SetAutoLayout(True)
-        #self.Bind(wx.EVT_SIZE, self.onResize)
         self.sizer.Layout()
+        self.SetAutoLayout(True)
 
     def construct(self, project):
         self.styler.select("Anything:normal", self)
@@ -185,8 +183,8 @@ class ProjectPropertiesPanel(ProjectPanel):
         chkBox1 = dynctrl.DynamicCheckBox(self, self.projectSource, "flipGradient",  label="flip gradient:")
         textCtrl1_1 = dynctrl.DynamicSpinCtrl(self, self.projectSource, "heatmapBaseImageWidth", size=(60, 18), min=4, max=50, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
         textCtrl1_2 = dynctrl.DynamicSpinCtrl(self, self.projectSource, "heatmapBaseImageHeight", size=(60, 18), min=4, max=50, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
-        textCtrl2_1 = dynctrl.DynamicSpinCtrl(self, self.project, "width", size=(60, 18), min=200, max=2500, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
-        textCtrl2_2 = dynctrl.DynamicSpinCtrl(self, self.project, "height", size=(60, 18), min=200, max=2500, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
+        textCtrl2_1 = dynctrl.DynamicSpinCtrl(self, self.project, "width", size=(60, 18), min=100, max=4000, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
+        textCtrl2_2 = dynctrl.DynamicSpinCtrl(self, self.project, "height", size=(60, 18), min=100, max=4000, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
         textCtrl3_1 = dynctrl.DynamicSpinCtrl(self, self.project, "borderSize", size=(60, 18), min=0, max=50, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
         textCtrl3_2 = dynctrl.DynamicSpinCtrl(self, self.project, "borderColourPick", size=(60, 18), min=1, max=255, style=wx.SP_WRAP|wx.SP_ARROW_KEYS)
         gridsizer1.AddMany([
@@ -230,11 +228,6 @@ class ProjectPropertiesPanel(ProjectPanel):
         for c in self.GetChildren():
             self.styler.select("Anything:normal", c) 
         self.sizer.Layout()
-
-    def onResize(self, e):
-        e.Skip()
-        w,h = self.GetSize()
-        self.Refresh(rect=(0,0,w,h))
 
     def onReset(self, e):
         self.project.reset()

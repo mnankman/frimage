@@ -129,6 +129,7 @@ class TabCtrl(wx.Panel):
             btn.setSelected(False)
         self.tabs[name][0].Show()
         self.tabs[name][1].setSelected()
+        self.Layout()
 
     def onTabSelect(self, e):
         nm = e.nm

@@ -14,3 +14,4 @@ src/app_base.py
 src/geni18n.py
 src/app_const.py
 src/locale/imgui.pot
+src/test/treectrl_test.py
