@@ -33,6 +33,7 @@ class DynamicCtrl:
 
 class DynamicLabel(DynamicCtrl, wx.StaticText):
     def __init__(self, parent, modelObject, attributeName, **kw):
+        log.debug(function=self.__init__, args=(modelObject.getFullId(), attributeName, kw))
         self.valueMap = {}
         kw2={}
         for k,v in kw.items():
@@ -44,7 +45,7 @@ class DynamicLabel(DynamicCtrl, wx.StaticText):
         DynamicCtrl.__init__(self, modelObject, attributeName)
         super(wx.StaticText, self).__init__(parent, **kw2)
         attrVal = modelObject.getAttribute(self.attributeName)
-        if attrVal in self.valueMap:
+        if attrVal in self.valueMap.keys():
             self.SetLabel(str(self.valueMap[attrVal]))
         else:
             self.SetLabel(str(attrVal))
@@ -54,7 +55,7 @@ class DynamicLabel(DynamicCtrl, wx.StaticText):
         attrVal = obj.getAttribute(self.attributeName)
         val = str(self.valueMap[attrVal]) if attrVal in self.valueMap else attrVal
         try:
-            self.SetLabel(str(attrVal))
+            self.SetLabel(val)
         except:
             pass
 
