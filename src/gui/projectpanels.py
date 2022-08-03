@@ -220,7 +220,7 @@ class ProjectPropertiesPanel(ProjectPanel):
 
         if isinstance(project, JuliaProject):
             gridsizer4 = wx.FlexGridSizer(1, gap=(5, 5))
-            btnRandomCxy = wx.Button(self, label=_displayHook("Random Cx & Cy"), size=(100, 18))
+            btnRandomCxy = wx.Button(self, label=_("Random Cx & Cy"), size=(100, 18))
             btnRandomCxy.Bind(wx.EVT_BUTTON, self.onRandomCxy)
             gridsizer4.Add(btnRandomCxy, 1)
             self.sizer.Add(gridsizer4, 1)

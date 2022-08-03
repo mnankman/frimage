@@ -312,13 +312,9 @@ class MainWindow(wx.Frame):
         self.controller.saveProject()
         e.Skip()
 
-    def onUserSaveProjectAs(self, e):
-        pass
-
     def onUserSaveGeneratedImage(self, e):
         path = dlg.saveImageDialog(self)
         self.ResultPnl.saveCurrentImage(path)
-        #self.controller.saveGeneratedImage(path)
         e.Skip()
 
     def onUserGenerate(self, e):
@@ -381,7 +377,7 @@ class MainWindow(wx.Frame):
         e.Skip()
 
     def onImageUpdated(self, e):
-        #self.controller.clearProjectModifications()
+        self.controller.clearProjectModifications()
         e.Skip()
 
     def onUserProjectFitImage(self, e):
