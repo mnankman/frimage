@@ -141,11 +141,13 @@ class JuliaGenerator(FractalGenerator):
         w,h = self.size
         plotValues = np.empty(self.size)
         xa,xb,ya,yb = self.area  # drawing area (xa < xb and ya < yb)
+        fy = (yb - ya) / (h - 1)
+        fx = (xb - xa) / (w - 1)
         i_max = 0
         for y in range(h):
-            zy = y * (yb - ya) / (h - 1) + ya
+            zy = y * fy + ya
             for x in range(w):
-                zx = x * (xb - xa) / (w - 1) + xa
+                zx = x * fx + xa
                 z = complex(zx, zy)
                 for i in range(self.maxIt):
                     if abs(z) > 2.0: break 
@@ -168,11 +170,13 @@ class MandelbrotGenerator(FractalGenerator):
         w,h = self.size
         plotValues = np.empty(self.size)
         xa,xb,ya,yb = self.area  # drawing area (xa < xb and ya < yb)
+        fy = (yb - ya) / (h - 1)
+        fx = (xb - xa) / (w - 1)
         i_max = 0
         for y in range(h):
-            cy = y * (yb - ya) / (h - 1)  + ya
+            cy = y * fy  + ya
             for x in range(w):
-                cx = x * (xb - xa) / (w - 1) + xa
+                cx = x * fx + xa
                 c = complex(cx, cy)
                 z = 0
                 for i in range(self.maxIt):
@@ -196,11 +200,13 @@ class SmoothMandelbrotGenerator(FractalGenerator):
         w,h = self.size
         self.plotValues = np.empty(self.size)
         xa,xb,ya,yb = self.area  # drawing area (xa < xb and ya < yb)
+        fy = (yb - ya) / (h - 1)
+        fx = (xb - xa) / (w - 1)
         mu_max = 0
         for y in range(h):
-            cy = y * (yb - ya) / (h - 1)  + ya
+            cy = y * fy  + ya
             for x in range(w):
-                cx = x * (xb - xa) / (w - 1) + xa
+                cx = x * fx + xa
                 c = complex(cx, cy)
                 z = complex(0, 0)
                 for i in range(self.maxIt):
