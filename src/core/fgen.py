@@ -32,14 +32,27 @@ def getImage(size, plot, gradient):
     assert gradient
     if plot.any() and gradient and size:
         w,h = size
-        pw,ph = plot.shape
+        if len(plot.shape)==3:
+            frameCount, pw, ph = plot.shape
+        elif len(plot.shape)==2:
+            frameCount = 1
+            pw, ph = plot.shape
+        else:
+            return None
+        frames=[]
         s = (w if w<=pw else pw, h if h<ph else ph)
-        image = Image.new("RGB", s)
-        ld = image.load()
-        for y in range(s[1]):
-            for x in range(s[0]):
-                ld[x,y] = gradient[int(plot[x,y])]
-        return image
+        for f in range(frameCount):
+            im = Image.new("RGB", s)
+            ld = im.load()
+            for y in range(s[1]):
+                for x in range(s[0]):
+                    v = plot[f,x,y] if len(plot.shape)==3 else plot[x,y]
+                    ld[x,y] = gradient[int(v)]
+            frames.append(im)
+        frames[0].save('animated.gif', format='GIF',
+               append_images=frames[1:], save_all=True, duration=120, loop=0)
+        log.trace(function=getImage, args=plot.shape, returns=(len(frames), frames[0]))
+        return frames[0]
     else:
         return None
 
@@ -111,10 +124,9 @@ class Source:
         return self.heatmapBaseImage
 
 class FractalGenerator:
-    def __init__(self, source, size=(512,512), reverseColors=False):
+    def __init__(self, source, size=(512,512)):
         self.source = source
         self.size = size
-        self.reverseColors = reverseColors
         self.image = None
 
     def setup(self, **parameters):
@@ -127,10 +139,11 @@ class FractalGenerator:
         
     async def generate(self, progressHandler=None):
         self.plotValues, self.maxValue = self.plot(progressHandler=progressHandler)
+        log.trace(function=self.generate, returns=(self.plotValues.shape))
 
 class JuliaGenerator(FractalGenerator):
-    def __init__(self, source, size=(512,512), reverseColors=False, area=(-2.0,1.0,-1.5,1.5), cxy=None, maxIt=256):
-        super().__init__(source, size, reverseColors)
+    def __init__(self, source, size=(512,512), area=(-2.0,1.0,-1.5,1.5), cxy=None, maxIt=256):
+        super().__init__(source, size)
         self.area = area
         self.cxy = cxy
         self.maxIt = maxIt
@@ -161,18 +174,31 @@ class JuliaGenerator(FractalGenerator):
 
 
 class MandelbrotGenerator(FractalGenerator):
-    def __init__(self, source, size=(512,512), reverseColors=False, area=(-2.0,1.0,-1.5,1.5), maxIt=256):
-        super().__init__(source, size, reverseColors)
-        self.area = area
+    def __init__(self, source, size=(512,512), areas=[(-2.0,1.0,-1.5,1.5)], maxIt=256):
+        super().__init__(source, size)
+        self.area = None
+        self.areas = areas
         self.maxIt = maxIt
 
     def plot(self, progressHandler=None):
+        if self.areas==None and self.area!=None:
+            self.areas=[self.area]
+        n = len(self.areas)
         w,h = self.size
-        plotValues = np.empty(self.size)
+        self.plotValues = np.empty((n,w,h))
+        self.i_max = 0
+        for f in range(n):
+            self.area = self.areas[f]
+            self.plotFrame(progressHandler, n, f)
+        return (self.plotValues, self.i_max)
+    
+    def plotFrame(self, progressHandler=None, n=1, frame=0):
+        log.debug(function=self.plotFrame, args=(n,frame))
+        w,h = self.size
         xa,xb,ya,yb = self.area  # drawing area (xa < xb and ya < yb)
         fy = (yb - ya) / (h - 1)
         fx = (xb - xa) / (w - 1)
-        i_max = 0
+        total=n*h
         for y in range(h):
             cy = y * fy  + ya
             for x in range(w):
@@ -182,17 +208,19 @@ class MandelbrotGenerator(FractalGenerator):
                 for i in range(self.maxIt):
                     if abs(z) > 2.0: break 
                     z = z * z + c 
-                plotValues[x,y] = i
-                i_max = i if i>i_max else i_max
+                self.plotValues[frame, x, y] = i
+                self.i_max = i if i>self.i_max else self.i_max
             if progressHandler!=None and y % 10 == 0:
-                progressHandler(self, int(100*y/h))
-        if progressHandler!=None: progressHandler(self, 100)
-        return (plotValues, i_max)
+                frameprogress=y/h
+                totalprogress=frame + frameprogress
+                progressHandler(self, int(totalprogress*100/n))
+        if progressHandler!=None: progressHandler(self, int((frame+1)*100/n))
+
 
 from decimal import Decimal
 class SmoothMandelbrotGenerator(FractalGenerator):
-    def __init__(self, source, size=(512,512), reverseColors=False, area=(-2.0,1.0,-1.5,1.5), maxIt=256):
-        super().__init__(source, size, reverseColors)
+    def __init__(self, source, size=(512,512), area=(-2.0,1.0,-1.5,1.5), maxIt=256):
+        super().__init__(source, size)
         self.area = area
         self.maxIt = maxIt
 
@@ -229,19 +257,4 @@ class SmoothMandelbrotGenerator(FractalGenerator):
                 progressHandler(self, int(100*y/h))
         progressHandler(self, 100)
 
-    def getImage(self):
-        self.pixels = self.source.getGradientPixels(int(1.1*self.maxIt), self.reverseColors)
-        if self.plotValues.any():
-            image = Image.new("RGB", self.size)
-            ld = image.load()
-            w,h = self.size
-            for y in range(h):
-                for x in range(w):
-                    try:
-                        ld[x,y] = self.pixels[int(self.plotValues[x,y])]
-                    except IndexError as e:
-                        log.error("plotvalue=",  self.plotValues[x,y])
-                        raise e
-            return image
-        else:
-            return None
+    

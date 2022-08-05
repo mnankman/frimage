@@ -77,20 +77,13 @@ class StatusBar(ProjectPanel):
         self.sizer.Add(self.progressBar, 0, wx.EXPAND | wx.ALL, 0)
         self.sizer.Layout()
 
+    def start(self):
+        self.progressBar.Start()
+
     def onProgress(self, generator, p):
+        log.debug(function=self.onProgress, args=p)
         self.progressBar.SetValue(p)
 
-    def onGenerate(self, e):
-        if isinstance(e, zoompanel.ZoomAreaEvent):
-            self.selectedArea = e.area
-        else:
-            self.selectedArea = None
-        self.progressBar.Start()
-        StartCoroutine(self.generate, self)
-        e.Skip()
-
-    async def generate(self):
-        await self.controller.generate(self.onProgress, area=self.selectedArea)
 
 
 class ProjectExplorerPanel(ProjectPanel):
@@ -110,7 +103,7 @@ class ProjectExplorerPanel(ProjectPanel):
         log.trace(function=self.construct, args=project.getFullId())
         self.styler.select("Anything:normal", self)
         self.sizer.Clear(True)
-        self.projectTree = wx.TreeCtrl(self, wx.ID_ANY, style=wx.TR_HAS_BUTTONS)
+        self.projectTree = wx.TreeCtrl(self, wx.ID_ANY, style=wx.TR_HAS_BUTTONS|wx.TR_MULTIPLE)
         self.projectTree.Bind(wx.EVT_TREE_SEL_CHANGED, self.onTreeItemSelected)
         self.styler.select("Anything:normal", self.projectTree) 
         self.resetTree()
@@ -145,6 +138,11 @@ class ProjectExplorerPanel(ProjectPanel):
         obj = self.projectTree.GetItemData(e.GetItem())
         if isinstance(obj, GeneratedSet): self.controller.down(obj)
 
+    def getSelection(self):
+        gensets = []
+        for item in self.projectTree.GetSelections():
+            gensets.append(self.projectTree.GetItemData(item))
+        return gensets
 
  
 class ProjectPropertiesPanel(ProjectPanel):

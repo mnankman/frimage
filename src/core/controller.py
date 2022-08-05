@@ -34,6 +34,12 @@ class Controller:
     def setAttribute(self, attrName, attrValue):
         self.model.setAttribute(attrName, attrValue)
 
+    def animationSetup(self, gensets):
+        self.model.animationSetup(gensets)
+
+    async def animate(self, progressHandler=None):
+        await self.model.animate(progressHandler)
+
     async def generate(self, progressHandler=None, **kw):
         await self.model.generate(progressHandler, **kw)
 

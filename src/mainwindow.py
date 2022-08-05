@@ -2,7 +2,7 @@ import asyncio
 from platform import platform
 import wx
 import wx.svg
-from wxasync import WxAsyncApp
+from wxasync import WxAsyncApp, StartCoroutine
 from wx.lib.inspection import InspectionTool
 
 from lib.i18n import i18n
@@ -33,17 +33,18 @@ ID_FILE_EXIT=199
 
 ID_PROJECT_SELECT_SOURCEIMAGE=301
 ID_PROJECT_GENERATE=302
-ID_PROJECT_RESET=303
-ID_PROJECT_SELECT_ZOOM_MODE=304
-ID_PROJECT_SELECT_FINISH_MODE=305
-ID_PROJECT_UP=306
-ID_PROJECT_HOME=307
-ID_PROJECT_MAKE_ROOT=308
-ID_PROJECT_DELETE_BRANCH=309
-ID_PROJECT_FIT_IMAGE=310
+ID_PROJECT_ANIMATE=303
+ID_PROJECT_RESET=304
+ID_PROJECT_SELECT_ZOOM_MODE=305
+ID_PROJECT_SELECT_FINISH_MODE=306
+ID_PROJECT_UP=307
+ID_PROJECT_HOME=308
+ID_PROJECT_MAKE_ROOT=309
+ID_PROJECT_DELETE_BRANCH=310
+ID_PROJECT_FIT_IMAGE=311
 
-ID_PROJECT_EXPLORER=311
-ID_PROJECT_PROPERTIES=312
+ID_PROJECT_EXPLORER=320
+ID_PROJECT_PROPERTIES=321
 
 ID_DEBUG_SHOWINSPECTIONTOOL=601
 
@@ -55,7 +56,7 @@ RESOURCE_LIST = {
     ID_FILE_OPEN_PROJECT: RESOURCES+"/open.png",
     ID_FILE_SAVE_PROJECT: RESOURCES+"/save.png",
     ID_PROJECT_SELECT_SOURCEIMAGE: RESOURCES+"/add_photo.png",
-    ID_PROJECT_GENERATE: RESOURCES+"/play.png",
+    ID_PROJECT_GENERATE: RESOURCES+"/generate.png",
     ID_PROJECT_RESET: RESOURCES+"/refresh.png",
     ID_PROJECT_FIT_IMAGE: RESOURCES+"/aspect_ratio.png",
     ID_PROJECT_SELECT_ZOOM_MODE: RESOURCES+"/picture_in_picture.png",
@@ -64,6 +65,7 @@ RESOURCE_LIST = {
     ID_PROJECT_HOME: RESOURCES+"/home.png",
     ID_PROJECT_MAKE_ROOT: RESOURCES+"/upload.png",
     ID_PROJECT_DELETE_BRANCH: RESOURCES+"/delete.png",
+    ID_PROJECT_ANIMATE: RESOURCES+"/animate.png",
     ID_FILE_NEW_PROJECT: RESOURCES+"/add.svg",
     ID_PROJECT_EXPLORER: RESOURCES+"/tree.svg",
     ID_PROJECT_PROPERTIES: RESOURCES+"/ballot.svg",
@@ -138,6 +140,7 @@ class MainWindow(wx.Frame):
         self.Bind(event=wx.EVT_MENU, handler=self.onUserExit, id=ID_FILE_EXIT)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserShowInspectionTool, id=ID_DEBUG_SHOWINSPECTIONTOOL)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserGenerate, id=ID_PROJECT_GENERATE)
+        self.Bind(event=wx.EVT_MENU, handler=self.onUserAnimate, id=ID_PROJECT_ANIMATE)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserReset, id=ID_PROJECT_RESET)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserSelectSourceImage, id=ID_PROJECT_SELECT_SOURCEIMAGE)
         self.Bind(event=wx.EVT_MENU, handler=self.onUserSaveGeneratedImage, id=ID_FILE_SAVE_GENERATED_IMAGE)
@@ -221,6 +224,7 @@ class MainWindow(wx.Frame):
         self.toolBar.AddSeparator()
         self.addTool(self.toolBar, ID_PROJECT_SELECT_SOURCEIMAGE, _("Select image..."))
         self.addTool(self.toolBar, ID_PROJECT_GENERATE, _("Generate"))
+        self.addTool(self.toolBar, ID_PROJECT_ANIMATE, _("Animate"))
         self.addTool(self.toolBar, ID_PROJECT_RESET, _("Reset"))
         self.addTool(self.toolBar, ID_PROJECT_FIT_IMAGE, _("Fit image to frame size"))
         self.toolBar.AddSeparator()
@@ -255,6 +259,7 @@ class MainWindow(wx.Frame):
         projectMenu.Append(ID_PROJECT_SELECT_SOURCEIMAGE, _("Se&lect source image"), _("Select the source image for this project"))
         projectMenu.Append(ID_PROJECT_RESET, _("&Reset"), _("Reset to default values"))
         projectMenu.Append(ID_PROJECT_GENERATE, _("&Generate"), _("Generate"))
+        projectMenu.Append(ID_PROJECT_ANIMATE, _("&Animate"), _("Animate"))
         projectMenu.Append(ID_PROJECT_FIT_IMAGE, _("Scale image to f&it"), _("Scale image to fit"))
         projectMenu.Append(ID_PROJECT_SELECT_ZOOM_MODE, _("Select &Zoom Mode"), _("Select Zoom Mode"))
         projectMenu.Append(ID_PROJECT_SELECT_FINISH_MODE, _("Select &Finish Mode"), _("Select Finish Mode"))
@@ -317,9 +322,25 @@ class MainWindow(wx.Frame):
         self.ResultPnl.saveCurrentImage(path)
         e.Skip()
 
+    async def generate(self):
+        await self.controller.generate(self.statusBar.onProgress, **self.generatorSetup)
+
+    async def animate(self):
+        await self.controller.animate(self.statusBar.onProgress)
+
     def onUserGenerate(self, e):
-        #TODO: refactor this temporary construction. It's ugly. In stead statusbar should listen for the event.
-        self.statusBar.onGenerate(e)
+        if isinstance(e, zoom.ZoomAreaEvent):
+            self.generatorSetup = {"area": e.area}
+        else:
+            self.generatorSetup = {}
+        self.statusBar.start()
+        StartCoroutine(self.generate, self)
+        e.Skip()
+
+    def onUserAnimate(self, e):
+        self.controller.animationSetup(self.explorerPnl.getSelection())
+        self.statusBar.start()
+        StartCoroutine(self.animate, self)
         e.Skip()
 
     def onUserReset(self, e):

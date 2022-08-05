@@ -4,7 +4,7 @@ import json
 #local
 import lib.wxdyn.log as  log
 import lib.wxdyn as wxd
-from .complex import JuliaProject, MandelbrotProject
+from .complex import ComplexProject, JuliaProject, MandelbrotProject
 
 class Application(wxd.ModelObject):
     def __init__(self):
@@ -96,6 +96,18 @@ class Model(wxd.Publisher):
 
     def setAttribute(self, attrName, attrValue):
         self.getCurrentProject().setAttribute(attrName, attrValue)
+
+    def animationSetup(self, gensets):
+        if len(gensets)==2:
+            prj = self.getCurrentProject()
+            if isinstance(prj, ComplexProject):
+                prj.animationSetup(gensets[1].getArea(), gensets[0].getArea())
+
+    async def animate(self, progressHandler=None):
+        prj = self.getCurrentProject()
+        if isinstance(prj, ComplexProject):
+            await prj.generate(progressHandler, animationsteps=prj.animationsteps)
+            self.dispatch("msg_generate_complete", {"project": self.__currentProject__})
 
     async def preview(self, **kw):
         await self.getCurrentProject().preview(**kw)

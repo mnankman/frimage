@@ -1,4 +1,5 @@
 #foreign
+from tkinter import DOTBOX
 import numpy as np
 
 #project
@@ -254,6 +255,7 @@ class ComplexProject(Project):
         self.initRootSet()
         self.currentSet = self.rootSet
         self.generator = None
+        self.animationsteps = None
         self.__maxIt = None
         self.persist("maxIt")
 
@@ -392,6 +394,27 @@ class ComplexProject(Project):
     def loadPlots(self, storage):
         self.getRootSet().loadPlots(storage)
 
+    def animationSetup(self, startArea, stopArea, steps=10):
+        self.animationsteps = []
+        assert startArea and isinstance(startArea, Area)
+        assert stopArea and isinstance(stopArea, Area)
+        self.animationsteps.append(startArea.getAll())
+        ax0,ay0,bx0,by0 = startArea.getAll()
+        axn,ayn,bxn,byn = stopArea.getAll()
+        dax = (axn-ax0)/(steps-1)
+        day = (ayn-ay0)/(steps-1)
+        dbx = (bxn-bx0)/(steps-1)
+        dby = (byn-by0)/(steps-1)
+        for i in range(steps):
+            ax = ax0 + i*dax
+            ay = ay0 + i*day
+            bx = bx0 + i*dbx
+            by = by0 + i*dby
+            self.animationsteps.append((ax,ay,bx,by))
+            log.debug((ax,ay,bx,by))
+        self.animationsteps.append(startArea.getAll())
+        log.debug(function=self.animationSetup, args=(startArea, stopArea, steps, (dax,day,dbx,dby)))
+
 
 class MandelbrotProject(ComplexProject):
     DEFAULT_AREA = (-2.0,1.0,-1.5,1.5)
@@ -416,18 +439,27 @@ class MandelbrotProject(ComplexProject):
 
     def preGenerate(self, generator, **setup):
         log.debug(function=self.preGenerate, args=setup)
-        if setup!=None and "area" in setup.keys():
-            areaRect = setup["area"]
+        areas = None
+        areaRect = None
+        if setup!=None and len(setup.keys())>0:
+            if "area" in setup.keys():
+                areaRect = setup["area"]
+            if "animationsteps" in setup.keys():
+                areas = setup["animationsteps"]
         else:
-            areaRect = self.currentSet.getArea().getRect()
+            #areaRect = self.currentSet.getArea().getRect()
+            areas = [self.currentSet.getArea().getAll()]
+
         if areaRect!=None and self.currentSet.hasGeneratedPlot():
             genSet = self.currentSet.addGeneratedSet()
             genSet.getArea().setRect(areaRect)
             self.currentSet = genSet
+            areas = [genSet.getArea().getAdjusted(self.getSize())]
+        assert areas!=None
         generator.setup(
             size=self.getSize(), 
             reverseColors=self.getProjectSource().getFlipGradient(), 
-            area=self.currentSet.getArea().getAdjusted(self.getSize())
+            areas=areas
         )
 
     def prePreview(self, generator, **setup):

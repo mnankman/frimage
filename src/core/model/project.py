@@ -126,7 +126,6 @@ class Project(wxd.ModelObject):
 
     def setProgress(self, p):
         self.progress = p
-        self.setModified()
 
     def getTouched(self):
         return self.__touched__
