@@ -131,3 +131,32 @@ class DynamicBitmap(DynamicCtrl, wx.StaticBitmap):
         obj = payload["object"]
         self.setBitmap(obj.getAttribute(self.attributeName), self.GetSize())
 
+class DynamicProgressIndicator(DynamicCtrl, wx.Panel):
+    def __init__(self, parent, modelObject, attributeName, **kw):
+        DynamicCtrl.__init__(self, modelObject, attributeName)
+        super(wx.Panel, self).__init__(parent, **kw)
+        self.progress = 0
+        self.Bind(wx.EVT_PAINT,self.onPaint)
+
+    def start(self):
+        self.setProgress(0)
+
+    def setProgress(self, p):
+        #log.debug(function=self.setProgress, args=p)
+        if p> self.progress:
+            self.progress = p
+        self.Update()
+
+    def onModelObjectChange(self, payload):
+        obj = payload["object"]
+        self.setProgress(obj.getAttribute(self.attributeName))
+
+    def onPaint(self, event):
+        event.Skip()
+        dc = wx.PaintDC(self)
+        rx,ry,rw,rh = self.GetClientRect()
+        self.paintStyler.select("DynamicProgressIndicator:progress", dc)
+        #log.debug(self.progress*0.01)
+        dc.DrawRectangle(rx, ry, int(rw*self.progress*0.01), rh)
+        self.paintStyler.select("DynamicProgressIndicator:normal", dc)
+        dc.DrawRectangle(int(rw*self.progress*0.01), ry, rw, rh)

@@ -95,3 +95,26 @@ def init():
         ],
     )
 
+    """
+    Style definitions for DynamicProgressIndicator
+    """
+    
+    styleCat.addStyle(
+        styleName = "DynamicProgressIndicator:normal", 
+        basedOn = "Anything:normal",
+        elements = [
+            wx.Pen("#444444", style=wx.PENSTYLE_SOLID),
+            wx.Brush("#444444", style=wx.BRUSHSTYLE_SOLID),
+        ],
+    )
+
+    
+    styleCat.addStyle(
+        styleName = "DynamicProgressIndicator:progress", 
+        basedOn = "Anything:normal",
+        elements = [
+            wx.Pen("#51A043", style=wx.PENSTYLE_SOLID),
+            wx.Brush("#51A043", style=wx.BRUSHSTYLE_SOLID),
+        ],
+    )
+

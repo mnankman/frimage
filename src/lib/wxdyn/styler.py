@@ -21,7 +21,7 @@ class StyleCatalog:
             name = util.getKwargValue("styleName", **kwargs)
             assert name
             elements = util.getKwargValue("elements", **kwargs)
-            assert elements
+            assert elements!=None
             basedOn = util.getKwargValue("basedOn", **kwargs)
             # start collecting the settings (colours, brushes, pens) for this style
             settings = None
