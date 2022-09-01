@@ -119,13 +119,13 @@ class ProjectExplorerPanel(ProjectPanel):
         self.projectTree.ExpandAll()
 
     def getItemLabel(self, genset):
-        lbl = "{} [{} x {}]"
+        lbl = "{} [{}]"
         shape = self.project.getSize()
         try:
             shape = genset.getGeneratedPlot().shape
         except:
             pass
-        return lbl.format(genset.getName(), *shape)
+        return lbl.format(genset.getName(), shape)
 
     def constructTree(self, parentItem, genset):
         log.debug(function=self.constructTree, args=(parentItem, genset.getFullId()))

@@ -85,6 +85,7 @@ class Area(wxd.ModelObject):
         ax,ay,aw,ah = self.getRect()
         tr = tw/th
         ar = aw/ah
+        if ar==tr: return self.getAll()
         if ar<tr:
             return(ax, ax+ah*tr, ay, ay+aw)
         else:
@@ -439,28 +440,24 @@ class MandelbrotProject(ComplexProject):
 
     def preGenerate(self, generator, **setup):
         log.debug(function=self.preGenerate, args=setup)
-        areas = None
-        areaRect = None
-        if setup!=None and len(setup.keys())>0:
-            if "area" in setup.keys():
-                areaRect = setup["area"]
-            if "animationsteps" in setup.keys():
-                areas = setup["animationsteps"]
-        else:
-            #areaRect = self.currentSet.getArea().getRect()
-            areas = [self.currentSet.getArea().getAll()]
-
-        if areaRect!=None and self.currentSet.hasGeneratedPlot():
-            genSet = self.currentSet.addGeneratedSet()
-            genSet.getArea().setRect(areaRect)
-            self.currentSet = genSet
-            areas = [genSet.getArea().getAdjusted(self.getSize())]
-        assert areas!=None
         generator.setup(
             size=self.getSize(), 
-            reverseColors=self.getProjectSource().getFlipGradient(), 
-            areas=areas
+            reverseColors=self.getProjectSource().getFlipGradient() 
         )
+        # is a setup parameter provided? (either "area" or "animationsteps")
+        if setup!=None and len(setup.keys())==1:
+            if "area" in setup.keys():
+                # we should only get here because we are zooming in on the current plot
+                assert self.currentSet.hasGeneratedPlot()                
+                areaRect = setup["area"]
+                genSet = self.currentSet.addGeneratedSet()
+                genSet.getArea().setRect(areaRect)
+                generator.setup(areas=[genSet.getArea().getAdjusted(self.getSize())])
+                self.currentSet = genSet
+            if "animationsteps" in setup.keys():
+                generator.setup(areas=setup["animationsteps"])
+        else:
+            generator.setup(areas=[self.currentSet.getArea().getAdjusted(self.getSize())])
 
     def prePreview(self, generator, **setup):
         log.debug(function=self.prePreview, args=generator)
@@ -539,7 +536,7 @@ class JuliaProject(ComplexProject):
         generator.setup(
             size=self.getSize(), 
             reverseColors=self.getProjectSource().getFlipGradient(), 
-            area=self.currentSet.getArea().getAdjusted(self.getSize()),
+            areas=[self.currentSet.getArea().getAdjusted(self.getSize())],
             cxy=self.currentSet.getCxy().getCxy()
         )
     

@@ -10,7 +10,7 @@ class Application(wxd.ModelObject):
     def __init__(self):
         super().__init__()
         self.__name__ = "FriMage Studio"
-        self.__version__ = "0.2"
+        self.__version__ = "0.3"
         self.__storageDir__ = "storage"
 
     def getName(self):
